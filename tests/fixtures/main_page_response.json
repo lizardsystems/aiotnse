@@ -1,0 +1,21 @@
+{
+    "COST-OF-RESTRICTION": 0,
+    "COST-OF-RESUMING": 0,
+    "PASSWORD-CONFIDENCE--HIDE-WARNING-BLOCK": false,
+    "PASSWORD-CONFIDENCE--SHOW-WARNING": true,
+    "emailAndKvitStatus": {
+        "email": "test@test.ru",
+        "ignore_ekvit": false,
+        "kvit_email": "test@test.ru",
+        "kvit_email_string": "Электронная квитанция <font color=\"#f46566\">не подключена</font>",
+        "kvit_enabled": true,
+        "ls": "611111111111",
+        "result": true
+    },
+    "result": true,
+    "summ": "-823.67",
+    "ticketsInfo": {
+        "resolved": 0,
+        "with_answer": 0
+    }
+}

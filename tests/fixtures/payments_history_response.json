@@ -1,0 +1,121 @@
+{
+    "history": {
+        "2022": [
+            {
+                "DATE": "10.12.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "500",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "09.11.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "520",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "08.10.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "520",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "09.09.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "1000",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "07.08.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "300",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "07.08.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "400",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "09.07.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "1200",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "09.06.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "100",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "08.05.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "700",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "09.04.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "310",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "06.03.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "520",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "06.02.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "800",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "07.01.2022",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "1200",
+                "TRANSACTION": ""
+            }
+        ],
+        "2023": [
+            {
+                "DATE": "08.03.2023",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "790",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "06.02.2023",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "980",
+                "TRANSACTION": ""
+            },
+            {
+                "DATE": "04.01.2023",
+                "DATETIME": "",
+                "ISTOCHNIK": "ПАО Сбербанк России",
+                "SUMMA": "970",
+                "TRANSACTION": ""
+            }
+        ]
+    },
+    "result": true
+}

@@ -1,0 +1,20 @@
+{
+  "ADDRESS": "г Таганрог, ул Ленина, д.23",
+  "CHISLOPROPISAN": 4,
+  "DIGITAL_RECEIPT": "true",
+  "DOCSOBSTV": "",
+  "JILPLOSCHAD": 0,
+  "KATEGJIL": "Нет",
+  "OBSCHPLOSCHAD": 117.4,
+  "SN_KOEFSEZON": 0.9,
+  "SN_OBJEM": 212,
+  "TELNANIMATEL": "89681111111",
+  "counters": [
+    {
+      "MestoUst": "Жилой дом",
+      "RaschSch": "Работает",
+      "ZavodNomer": "11111111"
+    }
+  ],
+  "result": true
+}

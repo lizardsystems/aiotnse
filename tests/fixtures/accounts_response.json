@@ -1,0 +1,70 @@
+{
+  "data": [
+    {
+      "alias": "Главный лицевой счёт",
+      "avatar_type": 5,
+      "cache_address": "г Таганрог, ул Ленина, д.23",
+      "cache_balance": "27.32",
+      "email": "test@test.ru",
+      "ignore_ekvit": false,
+      "is_locked": false,
+      "is_master_ls": true,
+      "is_slave_ls": false,
+      "kvit_email": "test@test.ru",
+      "kvit_email_string": "Электронная квитанция <font color=\"#00b638\">подключена</font> на адрес доставки: test@test.ru",
+      "kvit_enabled": true,
+      "ls": "611111111111",
+      "master_ls": "611111111111",
+      "slave_ls": "611111111111"
+    },
+    {
+      "alias": "Новый лицевой счёт",
+      "avatar_type": 6,
+      "cache_address": "г Таганрог, ул Ленина, д.23",
+      "cache_balance": "-487.3",
+      "cache_json": {
+        "Status": "Используется",
+        "is_kvit_on": true,
+        "kvt_email": "test@test.ru"
+      },
+      "cache_update_dt": "",
+      "email": "test@test.ru",
+      "ignore_ekvit": false,
+      "is_locked": true,
+      "is_master_ls": false,
+      "is_slave_ls": true,
+      "kvit_email": "test@test.ru",
+      "kvit_enabled": true,
+      "last_update": "2021-01-07 16:18:20",
+      "master_ls": "611111111111",
+      "slave_ls": "611111111112"
+    },
+    {
+      "alias": "Новый лицевой счёт",
+      "avatar_type": 6,
+      "cache_address": "ул Ленина, д.23",
+      "cache_balance": "0",
+      "cache_json": {
+        "is_kvit_on": true,
+        "kvt_email": "test@test.ru"
+      },
+      "cache_update_dt": "",
+      "email": "test@test.ru",
+      "ignore_ekvit": false,
+      "is_locked": true,
+      "is_master_ls": false,
+      "is_slave_ls": true,
+      "kvit_email": "test@test.ru",
+      "kvit_enabled": true,
+      "last_update": "2021-01-07 16:19:16",
+      "master_ls": "611111111111",
+      "slave_ls": "611111111113"
+    }
+  ],
+  "email": "test@test.ru",
+  "has_ls_without_kvit": false,
+  "is_master": true,
+  "is_slave": false,
+  "kvit_enabled": true,
+  "result": true
+}

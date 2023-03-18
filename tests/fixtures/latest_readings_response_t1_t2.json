@@ -1,48 +1,3 @@
-# aioTNSE
-
-Asynchronous Python API for [TNS-Energo](https://tns-e.ru).
-
-## Installation
-
-Use pip to install the library:
-
-```commandline
-pip install aiotnse
-```
-
-## Usage
-
-```python
-
-import asyncio
-from pprint import pprint
-
-import aiohttp
-
-from aiotnse import SimpleTNSEAuth, TNSEApi
-
-
-async def main(account: str) -> None:
-    """Create the aiohttp session and run the example."""
-    async with aiohttp.ClientSession() as session:
-        auth = SimpleTNSEAuth(session)
-        api = TNSEApi(auth)
-
-        data = await api.async_get_latest_readings(account)
-
-        pprint(data)
-
-
-if __name__ == "__main__":
-    _account = string = str(input("Account: "))
-    asyncio.run(main(_account))
-```
-
-The `SimpleTNSEAuth` client also accept custom access token (this can be found by sniffing the client).
-
-This will return a price object that looks a little like this:
-
-```json
 {
   "STATUS": "Используется",
   "counters": {
@@ -105,15 +60,3 @@ This will return a price object that looks a little like this:
   },
   "result": true
 }
-```
-
-## Timeouts
-
-aiotnse does not specify any timeouts for any requests. You will need to specify them in your own code. We recommend the `async_timeout` package:
-
-```python
-import async_timeout
-
-with async_timeout.timeout(10):
-    data = await api.async_get_account_status(account)
-```

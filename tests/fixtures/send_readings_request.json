@@ -1,0 +1,16 @@
+[
+  {
+    "counterNumber": "22222222",
+    "label": "Дневная зона",
+    "newPok": "938",
+    "nomerTarifa": "0",
+    "rowID": "1111111"
+  },
+  {
+    "counterNumber": "22222222",
+    "label": "Ночная зона",
+    "newPok": "421",
+    "nomerTarifa": "1",
+    "rowID": "1111111"
+  }
+]

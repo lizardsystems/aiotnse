@@ -1,0 +1,15 @@
+{
+  "emailAndKvitStatus": {
+    "email": "test@test.ru",
+    "ignore_ekvit": false,
+    "kvit_email": "test@test.ru",
+    "kvit_email_string": "Электронная квитанция <font color=\"#00b638\">подключена</font> на адрес доставки: test@test.ru",
+    "kvit_enabled": true,
+    "ls": "611111111111"
+  },
+  "is_locked": false,
+  "is_master": true,
+  "is_slave": false,
+  "registered_email": "test@test.ru",
+  "result": true
+}
