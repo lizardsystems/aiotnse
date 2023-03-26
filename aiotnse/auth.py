@@ -44,10 +44,10 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
     def __init__(self,
                  session: ClientSession,
                  *,
-                 access_token: str = DEFAULT_HASH):
+                 access_token: str | None = None):
         """Initialize the auth."""
         super().__init__(session)
-        self._token = access_token
+        self._token = access_token or DEFAULT_HASH
 
     async def async_get_access_token(self) -> str:
         """Return a valid access token."""
