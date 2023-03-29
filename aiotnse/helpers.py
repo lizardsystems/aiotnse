@@ -23,6 +23,6 @@ def get_region(account: str):
 def is_error_response(response) -> bool:
     """Response from async call contains errors or not."""
     if isinstance(response, dict):
-        return response.get("result") not in (False, None)
+        return response.get("result") is not True
 
-    return False
+    return True
