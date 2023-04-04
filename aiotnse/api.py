@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Union
+from typing import Any, Union, Final
 
 from aiohttp import hdrs, MultipartWriter
 
@@ -15,13 +15,13 @@ from .helpers import get_region
 
 class TNSEApi:
     """Class to communicate with the TNS-Energo API."""
-    _version: str = DEFAULT_API_VERSION
+    VERSION: Final[str] = DEFAULT_API_VERSION
     _api_url: str
 
     def __init__(self, auth: AbstractTNSEAuth):
         """Initialize the API and store the auth."""
         self._auth = auth
-        self._api_url = f"{DEFAULT_BASE_URL}/version/{self._version}/Android/mobile"
+        self._api_url = f"{DEFAULT_BASE_URL}/version/{self.VERSION}/Android/mobile"
 
     async def _async_get(self, url: str) -> Union[dict[str, Any], list[dict[str, Any]]]:
         """Make async get request to api endpoint"""
@@ -102,3 +102,10 @@ class TNSEApi:
         if not readings:
             raise RequiredApiParamNotFound("Required API 'readings' parameter not found")
         return await self._async_post(_url, readings=readings)
+
+    async def async_get_authorization(self, account: str, password: str) -> dict[str, Any]:
+        """Get authorization token"""
+        region = get_region(account)
+        _url = f"region/{region}/action/authorization/json/"
+        data = {"ls": account, "password": password}
+        return await self._async_post(_url, data=data)
