@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, Union, Final
 
 from aiohttp import hdrs, MultipartWriter
@@ -84,10 +84,10 @@ class TNSEApi:
         _url = f"region/{region}/action/getPaymentsHistPage/ls/{account}/json/"
         return await self._async_get(_url)
 
-    async def async_get_bill(self, account: str, date: datetime) -> dict[str, Any]:
+    async def async_get_bill(self, account: str, dt: date) -> dict[str, Any]:
         """Get general info about account."""
         region = get_region(account)
-        _url = f"region/{region}/action/getBill/ls/{account}/date/{date:%d.%m.%Y}/json/"
+        _url = f"region/{region}/action/getBill/ls/{account}/date/{dt:%d.%m.%Y}/json/"
         return await self._async_get(_url)
 
     async def async_get_latest_readings(self, account: str) -> dict[str, Any]:
