@@ -8,7 +8,7 @@ from pprint import pprint
 
 from aiohttp import ClientSession
 
-from ._version import __version__
+from . import __version__
 from .api import TNSEApi
 from .auth import SimpleTNSEAuth
 from .const import LOG_LEVELS
@@ -105,7 +105,7 @@ async def cli() -> None:
 
         if args.bill:
             print(f"Bill for account #{account}:")
-            _info = await api.async_get_bill(account, date=datetime.now())
+            _info = await api.async_get_bill(account, datetime.now())
             pprint(_info)
             return
 

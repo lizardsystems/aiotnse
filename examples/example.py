@@ -20,5 +20,5 @@ async def main(account: str) -> None:
 
 
 if __name__ == "__main__":
-    _account = string = str(input("Account: "))
+    _account = str(input("Account: "))
     asyncio.run(main(_account))

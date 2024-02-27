@@ -27,6 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Typing :: Typed",
 ]
@@ -52,7 +53,7 @@ include-package-data = true
 package-data = {"aiotnse" = ["py.typed"]}
 
 [project.scripts]
-aiotaipit = "aiotnse.__main__:main"
+aiotnse-cli = "aiotnse.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["aiotnse*"]
