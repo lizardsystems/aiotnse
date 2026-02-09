@@ -16,7 +16,6 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="class")
-@pytest.mark.asyncio
 async def auth() -> SimpleTNSEAuth:
     async with aiohttp.ClientSession() as _session:
         _auth = SimpleTNSEAuth(session=_session)
@@ -25,7 +24,6 @@ async def auth() -> SimpleTNSEAuth:
 
 
 @pytest_asyncio.fixture(scope="class")
-@pytest.mark.asyncio
 async def api(auth: SimpleTNSEAuth) -> TNSEApi:
     _api = TNSEApi(auth)
     yield _api

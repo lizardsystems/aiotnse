@@ -40,6 +40,51 @@ if __name__ == "__main__":
 
 The `SimpleTNSEAuth` client also accept custom access token (this can be found by sniffing the client).
 
+## New Mobile API (login + password)
+
+If your region is moved to the new mobile API (`mobile-api-<region>.tns-e.ru`), use `TNSEMobileAuth` and `TNSEMobileApi`:
+
+```python
+import asyncio
+from pprint import pprint
+
+import aiohttp
+
+from aiotnse import TNSEMobileApi, TNSEMobileAuth
+
+
+async def main(login: str, password: str, account: str) -> None:
+    async with aiohttp.ClientSession() as session:
+        auth = TNSEMobileAuth(
+            session,
+            login=login,
+            password=password,
+            region="nn",
+        )
+        api = TNSEMobileApi(auth)
+
+        user = await api.async_get_user()
+        balance = await api.async_get_current_payment(account)
+
+        pprint(user)
+        pprint(balance)
+
+
+if __name__ == "__main__":
+    asyncio.run(main("demo@example.com", "password", "520000000001"))
+```
+
+You can also derive the region from account automatically:
+
+```python
+auth = TNSEMobileAuth.from_account(
+    session,
+    login="demo@example.com",
+    password="password",
+    account="520000000001",
+)
+```
+
 This will return a price object that looks a little like this:
 
 ```json

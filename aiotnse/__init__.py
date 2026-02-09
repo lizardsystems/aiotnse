@@ -10,10 +10,13 @@ except ImportError:
 
 from .api import TNSEApi
 from .auth import AbstractTNSEAuth, SimpleTNSEAuth
+from .new_api import TNSEMobileApi, TNSEMobileAuth
 
 __all__ = [
     "TNSEApi",
+    "TNSEMobileApi",
     "AbstractTNSEAuth",
     "SimpleTNSEAuth",
+    "TNSEMobileAuth",
     __version__
 ]

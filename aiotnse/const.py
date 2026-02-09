@@ -18,6 +18,12 @@ DEFAULT_BASE_URL: Final = "https://rest.tns-e.ru"
 DEFAULT_API_VERSION: Final = "1.69"
 DEFAULT_HASH: Final = "958fdc9525875bb8ef89e5c0bda3ebc60b95040e"
 DEFAULT_USER_AGENT: Final = "okhttp/3.7.0"
+DEFAULT_MOBILE_API_URL_TEMPLATE: Final = "https://mobile-api-{region}.tns-e.ru/api/v1"
+DEFAULT_MOBILE_API_HASH: Final = "b4c9554247f14b9a281f5f60df923f5e"
+DEFAULT_MOBILE_USER_AGENT: Final = "Dart/3.9 (dart:io)"
+DEFAULT_MOBILE_PLATFORM: Final = "android"
+DEFAULT_MOBILE_AUTH_TYPE: Final = "email"
+DEFAULT_MOBILE_BEARER_HEADER: Final = "authorizationtest"
 DEFAULT_ACCOUNT_NUMBERS: Final = 12
 
 REGIONS: Final[dict[str, str]] = {

@@ -1,6 +1,7 @@
 """Tests for aiotnse package."""
 import json
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 from aioresponses import aioresponses
@@ -10,14 +11,20 @@ from aiotnse.const import DEFAULT_BASE_URL, DEFAULT_API_VERSION, DEFAULT_HASH
 from aiotnse.helpers import get_region
 from tests.common import HEADERS, ACCOUNT
 
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+
+def _load_fixture(name: str) -> dict:
+    with (FIXTURES_DIR / name).open(encoding="utf-8") as file:
+        return json.load(file)
+
 
 @pytest.mark.asyncio
 class TestTNSEApi:
     async def test_get_account_status(self, api: TNSEApi, session_mock: aioresponses):
         account = ACCOUNT
         headers = HEADERS
-        with open("fixtures/account_status_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("account_status_response.json")
 
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -30,14 +37,13 @@ class TestTNSEApi:
         assert data is not None
         assert data["result"]
         assert data["emailAndKvitStatus"]["ls"] == account
-        assert data["registered_email"] == "test@test.ru"
+        assert data["registered_email"] == "demo@example.com"
 
     async def test_get_latest_readings(self, api: TNSEApi, session_mock: aioresponses):
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/latest_readings_response_t1_t2.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("latest_readings_response_t1_t2.json")
 
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -60,8 +66,7 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/readings_history_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("readings_history_response.json")
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
             f"region/{region}/action/getReadingsHistPage/ls/{account}/json/"
@@ -88,8 +93,7 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/current_payment_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("current_payment_response.json")
 
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -108,8 +112,7 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/payments_history_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("payments_history_response.json")
 
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -131,8 +134,7 @@ class TestTNSEApi:
     async def test_get_accounts(self, api: TNSEApi, session_mock: aioresponses):
         account = ACCOUNT
         headers = HEADERS
-        with open("fixtures/accounts_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("accounts_response.json")
 
         session_mock.post(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -150,8 +152,7 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/main_page_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("main_page_response.json")
 
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -170,8 +171,7 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/general_info_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("general_info_response.json")
 
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
@@ -193,8 +193,7 @@ class TestTNSEApi:
         headers = HEADERS
         date = datetime(day=1, month=1, year=2023)
         region = get_region(account)
-        with open("fixtures/bill_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("bill_response.json")
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
             f"region/{region}/action/getBill/ls/{account}/date/{date:%d.%m.%Y}/json/"
@@ -212,8 +211,7 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/registered_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        payload = _load_fixture("registered_response.json")
         session_mock.get(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
             f"region/{region}/action/isLsRegisteredAndHasPayments/{account}/"
@@ -231,10 +229,8 @@ class TestTNSEApi:
         account = ACCOUNT
         headers = HEADERS
         region = get_region(account)
-        with open("fixtures/send_readings_request.json", encoding="utf-8") as file:
-            readings = json.load(file)
-        with open("fixtures/send_readings_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+        readings = _load_fixture("send_readings_request.json")
+        payload = _load_fixture("send_readings_response.json")
         session_mock.post(
             f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
             f"region/{region}/action/sendReadings/ls/{account}/json/"
