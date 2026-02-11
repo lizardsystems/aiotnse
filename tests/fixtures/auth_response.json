@@ -1,0 +1,10 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": {
+        "accessTokenExpires": "2026-06-09 19:42:16",
+        "accessToken": "test_access_token_new",
+        "refreshTokenExpires": "2026-10-09 19:42:16",
+        "refreshToken": "test_refresh_token_new"
+    }
+}

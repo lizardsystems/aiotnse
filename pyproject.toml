@@ -1,59 +1,61 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiotnse"
-dependencies = [
-    "aiohttp"
-]
-dynamic = ["version"]
-description = "Asynchronous Python API For TNS-Energo"
+version = "2.0.0"
+description = "Asynchronous Python API for TNS-Energo"
 readme = "README.md"
-requires-python = ">=3.9.0"
+license = "MIT"
+requires-python = ">=3.13"
 keywords = [
-    "tns-energo",
+    "electricity",
     "energy",
-    "electricity"
+    "home-assistant",
+    "tns-energo",
 ]
-license = { text = "MIT License" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: MIT License",
+    "Framework :: AsyncIO",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Home Automation",
     "Typing :: Typed",
 ]
-
-[project.urls]
-Home = "https://github.com/lizardsystems/aiotnse"
-Repository = "https://github.com/lizardsystems/aiotnse"
-Documentation = "https://github.com/lizardsystems/aiotnse"
-"Bug Tracker" = "https://github.com/lizardsystems/aiotnse/issues"
-Changelog = "https://github.com/lizardsystems/aiotnse/blob/master/CHANGELOG.md"
+dependencies = [
+    "aiohttp>=3",
+]
 
 [[project.authors]]
 name = "LizardSystems"
 
-[tool.setuptools_scm]
-write_to = "aiotnse/_version.py"
-local_scheme = "no-local-version"
-version_scheme = "post-release"
-
-[tool.setuptools]
-platforms = ["any"]
-include-package-data = true
-package-data = {"aiotnse" = ["py.typed"]}
+[project.urls]
+Repository = "https://github.com/lizardsystems/aiotnse"
+Documentation = "https://github.com/lizardsystems/aiotnse"
+"Bug Tracker" = "https://github.com/lizardsystems/aiotnse/issues"
+Changelog = "https://github.com/lizardsystems/aiotnse/blob/main/CHANGELOG.md"
 
 [project.scripts]
 aiotnse-cli = "aiotnse.__main__:main"
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "aioresponses",
+]
+
+[tool.setuptools]
+include-package-data = true
+package-data = {"aiotnse" = ["py.typed"]}
+
 [tool.setuptools.packages.find]
 include = ["aiotnse*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

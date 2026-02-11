@@ -13,7 +13,6 @@ pip install aiotnse
 ## Usage
 
 ```python
-
 import asyncio
 from pprint import pprint
 
@@ -22,90 +21,52 @@ import aiohttp
 from aiotnse import SimpleTNSEAuth, TNSEApi
 
 
-async def main(account: str) -> None:
+async def main(email: str, password: str, region: str) -> None:
     """Create the aiohttp session and run the example."""
     async with aiohttp.ClientSession() as session:
-        auth = SimpleTNSEAuth(session)
+        auth = SimpleTNSEAuth(
+            session,
+            region=region,
+            email=email,
+            password=password,
+        )
+
+        # Login first
+        await auth.async_login()
+
         api = TNSEApi(auth)
 
-        data = await api.async_get_latest_readings(account)
+        # Get user accounts
+        accounts = await api.async_get_accounts()
+        pprint(accounts)
 
-        pprint(data)
+        # Get counters for an account
+        account_number = accounts["data"][0]["number"]
+        counters = await api.async_get_counters(account_number)
+        pprint(counters)
 
 
 if __name__ == "__main__":
-    _account = string = str(input("Account: "))
-    asyncio.run(main(_account))
+    _email = input("Email: ")
+    _password = input("Password: ")
+    _region = input("Region (e.g. rostov, penza, yar): ")
+    asyncio.run(main(_email, _password, _region))
 ```
 
-The `SimpleTNSEAuth` client also accept custom access token (this can be found by sniffing the client).
+You can also restore a session with saved tokens:
 
-This will return a price object that looks a little like this:
-
-```json
-{
-  "STATUS": "Используется",
-  "counters": {
-    "1111111": [
-      {
-        "Can_delete": "0",
-        "DatePok": "06.02.2023",
-        "DatePosledPover": "31.12.2021",
-        "DatePover": "31.12.2037",
-        "DatePoverStatus": 0,
-        "DatePoverURL": "",
-        "GodVipuska": "01.01.22",
-        "KoefTrans": "1",
-        "Label": "Дневная зона",
-        "MaxPok": "2000",
-        "MestoUst": "Жилой дом",
-        "ModelPU": "Нева МТ 114 AS PLRFPC",
-        "NazvanieTarifa": "День",
-        "NazvanieUslugi": "Электроснабжение ",
-        "NomerTarifa": "0",
-        "NomerUslugi": "0100",
-        "PredPok": "700",
-        "RaschSch": "Работает",
-        "Razradnost": "6",
-        "RowID": "1111111",
-        "Tarifnost": "2",
-        "Type": "1",
-        "ZavodNomer": "22222222",
-        "sort": 0,
-        "zakrPok": "700"
-      },
-      {
-        "Can_delete": "0",
-        "DatePok": "06.02.2023",
-        "DatePosledPover": "31.12.2021",
-        "DatePover": "31.12.2037",
-        "DatePoverStatus": 0,
-        "DatePoverURL": "",
-        "GodVipuska": "01.01.22",
-        "KoefTrans": "1",
-        "Label": "Ночная зона",
-        "MaxPok": "2000",
-        "MestoUst": "Жилой дом",
-        "ModelPU": "Нева МТ 114 AS PLRFPC",
-        "NazvanieTarifa": "Ночь",
-        "NazvanieUslugi": "Электроснабжение ",
-        "NomerTarifa": "1",
-        "NomerUslugi": "0100",
-        "PredPok": "337",
-        "RaschSch": "Работает",
-        "Razradnost": "6",
-        "RowID": "1111111",
-        "Tarifnost": "2",
-        "Type": "1",
-        "ZavodNomer": "22222222",
-        "sort": 1,
-        "zakrPok": "337"
-      }
-    ]
-  },
-  "result": true
-}
+```python
+auth = SimpleTNSEAuth(
+    session,
+    region="rostov",
+    access_token="saved_access_token",
+    refresh_token="saved_refresh_token",
+)
 ```
+
+## Contributors
+
+- [Sergei Mikheev (@Muxee4ka)](https://github.com/Muxee4ka) — research and documentation of the new mobile API
 
 ## Timeouts
 
@@ -114,6 +75,6 @@ aiotnse does not specify any timeouts for any requests. You will need to specify
 ```python
 import asyncio
 
-with asyncio.timeout(10):
-    data = await api.async_get_account_status(account)
+async with asyncio.timeout(10):
+    data = await api.async_get_counters(account)
 ```

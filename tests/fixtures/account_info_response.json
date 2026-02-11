@@ -1,0 +1,24 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": {
+        "id": 100001,
+        "number": "610000000001",
+        "name": "",
+        "address": "г Ростов-на-Дону,ул Примерная,д.1",
+        "phone": "",
+        "numberPersons": 0,
+        "totalArea": 65,
+        "livingArea": 0,
+        "document": "нет",
+        "tenantCategory": "нет",
+        "seasonRatio": 0.9,
+        "countersInfo": [
+            {
+                "number": "10000001",
+                "place": "",
+                "checkingDate": "01.01.2040"
+            }
+        ]
+    }
+}

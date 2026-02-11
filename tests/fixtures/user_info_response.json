@@ -1,0 +1,9 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": {
+        "id": 50001,
+        "email": "user@example.com",
+        "region": "rostov"
+    }
+}

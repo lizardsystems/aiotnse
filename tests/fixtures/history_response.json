@@ -1,0 +1,46 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": {
+        "filters": [
+            {
+                "type": 1,
+                "title": "Платежи"
+            },
+            {
+                "type": 2,
+                "title": "Показания"
+            },
+            {
+                "type": 3,
+                "title": "Квитанции"
+            }
+        ],
+        "items": [
+            {
+                "type": 2,
+                "title": "Показания",
+                "date": "09.02.26",
+                "indications": [
+                    {
+                        "title": "День ПУ 10000001",
+                        "value": 5105,
+                        "consumption": 1
+                    },
+                    {
+                        "title": "Ночь ПУ 10000001",
+                        "value": 2205,
+                        "consumption": 1
+                    }
+                ]
+            },
+            {
+                "type": 1,
+                "title": "Платеж от 08.02.26",
+                "date": "08.02.26",
+                "description": "Лицевой счет 610000000001",
+                "amount": 2000.0
+            }
+        ]
+    }
+}

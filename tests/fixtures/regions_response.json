@@ -1,0 +1,26 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": [
+        {
+            "name": "Воронежская область",
+            "code": "voronezh",
+            "coordinates": "506, 729"
+        },
+        {
+            "name": "Краснодарский край и Республика Адыгея",
+            "code": "kuban",
+            "coordinates": "544, 647"
+        },
+        {
+            "name": "Нижегородская область",
+            "code": "nn",
+            "coordinates": "636, 647"
+        },
+        {
+            "name": "Ростовская область",
+            "code": "rostov",
+            "coordinates": "458, 683"
+        }
+    ]
+}

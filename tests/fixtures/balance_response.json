@@ -1,0 +1,30 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": {
+        "sumToPayRaw": 1500.5,
+        "debt": 0,
+        "debtAbs": 0,
+        "peniDebt": 0,
+        "closedMonth": "01.02.26",
+        "sumWithoutCheckbox": 0,
+        "sumWithCheckbox": 1500.5,
+        "sumToPay": 1500.5,
+        "hasAvans": true,
+        "avansTotal": 1500.5,
+        "avansType": "avg",
+        "avansMain": 1500.5,
+        "hasRecalc": false,
+        "recalc": 0,
+        "hasLosses": false,
+        "losses": 0,
+        "hasOdn": false,
+        "odn": 0,
+        "hasPeniForecast": false,
+        "peniForecast": 0,
+        "hasOtherServicesDebt": false,
+        "otherServicesDebt": 0,
+        "fromDb": false,
+        "nulliableSumm": false
+    }
+}

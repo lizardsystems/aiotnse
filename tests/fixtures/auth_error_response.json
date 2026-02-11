@@ -1,0 +1,8 @@
+{
+    "result": false,
+    "statusCode": 400,
+    "error": {
+        "type": "PROVIDER_ERROR",
+        "description": "Неверный логин или пароль."
+    }
+}

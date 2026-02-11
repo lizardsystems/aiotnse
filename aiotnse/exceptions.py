@@ -3,20 +3,28 @@ from __future__ import annotations
 
 
 class TNSEApiError(Exception):
-    """Base class for aiotaipit errors"""
+    """Base class for aiotnse errors."""
 
 
 class TNSEAuthError(TNSEApiError):
-    """Base class for aiotaipit auth errors"""
+    """Base class for aiotnse auth errors."""
+
+
+class TNSETokenExpiredError(TNSEAuthError):
+    """Access token has expired and needs refresh."""
+
+
+class TNSETokenRefreshError(TNSEAuthError):
+    """Refresh token failed, re-authentication required."""
 
 
 class RegionNotFound(TNSEApiError):
-    """Region for account number are not found"""
+    """Region for account number is not found."""
 
 
 class RequiredApiParamNotFound(TNSEApiError):
-    """Required API parameter not found"""
+    """Required API parameter not found."""
 
 
 class InvalidAccountNumber(TNSEApiError):
-    """Invalid account number"""
+    """Invalid account number."""

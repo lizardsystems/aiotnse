@@ -1,249 +1,213 @@
-"""Tests for aiotnse package."""
-import json
-from datetime import datetime
+"""Tests for aiotnse API module."""
+from __future__ import annotations
 
+import aiohttp
 import pytest
 from aioresponses import aioresponses
 
 from aiotnse import TNSEApi
-from aiotnse.const import DEFAULT_BASE_URL, DEFAULT_API_VERSION, DEFAULT_HASH
-from aiotnse.helpers import get_region
-from tests.common import HEADERS, ACCOUNT
+from aiotnse.api import async_get_regions
+from aiotnse.const import DEFAULT_APP_VERSION
+from aiotnse.exceptions import RequiredApiParamNotFound
+from tests.common import (
+    ACCOUNT,
+    ACCOUNT_ID,
+    API_URL,
+    COUNTER_ID,
+    HEADERS,
+    ROW_ID,
+)
+from tests.conftest import load_fixture
 
 
-@pytest.mark.asyncio
+class TestAsyncGetRegions:
+    async def test_get_regions(self) -> None:
+        """Test standalone async_get_regions() without auth."""
+        with aioresponses() as mock:
+            mock.get(
+                f"{API_URL}/contacts/regions",
+                payload=load_fixture("regions_response.json"),
+                headers=HEADERS,
+            )
+            async with aiohttp.ClientSession() as session:
+                data = await async_get_regions(session)
+
+        assert data["result"] is True
+        assert len(data["data"]) > 0
+        codes = [r["code"] for r in data["data"]]
+        assert "rostov" in codes
+
+
 class TestTNSEApi:
-    async def test_get_account_status(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        with open("fixtures/account_status_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
-
+    async def test_check_version(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"delegation/getLsStatus/{account}/?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/app/version?version={DEFAULT_APP_VERSION}",
+            payload=load_fixture("app_version_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_account_status(account)
+        data = await api.async_check_version()
 
-        assert data is not None
-        assert data["result"]
-        assert data["emailAndKvitStatus"]["ls"] == account
-        assert data["registered_email"] == "test@test.ru"
+        assert data["result"] is True
+        assert data["data"]["status"] == 1
 
-    async def test_get_latest_readings(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/latest_readings_response_t1_t2.json", encoding="utf-8") as file:
-            payload = json.load(file)
-
+    async def test_get_user_info(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getSendReadingsPage/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/user",
+            payload=load_fixture("user_info_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_latest_readings(account)
+        data = await api.async_get_user_info()
 
-        assert data is not None
-        assert data["result"]
-        assert data["counters"]
-        for row_id in data["counters"]:
-            for meter in data["counters"][row_id]:
-                assert meter["ZavodNomer"]
-                assert meter["ZavodNomer"] == "22222222"
+        assert data["result"] is True
+        assert data["data"]["email"] == "user@example.com"
+        assert data["data"]["region"] == "rostov"
 
-    async def test_get_readings_history(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/readings_history_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+    async def test_get_accounts(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getReadingsHistPage/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/accounts",
+            payload=load_fixture("accounts_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_readings_history(account)
+        data = await api.async_get_accounts()
 
-        assert data is not None
-        assert data["result"]
-        assert data["history"]
-        for year in data["history"]:
-            for record_date in data["history"][year]:
-                for row_id in data["history"][year][record_date]:
-                    assert data["history"][year][record_date][row_id]
-                    assert "number" in data["history"][year][record_date][row_id]
-                    assert "readings" in data["history"][year][record_date][row_id]
-                    for reading in data["history"][year][record_date][row_id]["readings"]:
-                        assert "label" in data["history"][year][record_date][row_id]["readings"][reading]
-                        assert "value" in data["history"][year][record_date][row_id]["readings"][reading]
+        assert data["result"] is True
+        assert len(data["data"]) == 2
+        assert data["data"][0]["id"] == ACCOUNT_ID
+        assert data["data"][0]["number"] == ACCOUNT
 
-    async def test_get_current_payment(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/current_payment_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
-
+    async def test_get_account_info(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getPaymentPage/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/accounts/{ACCOUNT_ID}",
+            payload=load_fixture("account_info_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_current_payment(account)
+        data = await api.async_get_account_info(ACCOUNT_ID)
 
-        assert data is not None
-        assert data["result"]
-        assert data["data"]
+        assert data["result"] is True
+        assert data["data"]["id"] == ACCOUNT_ID
+        assert data["data"]["number"] == ACCOUNT
+        assert data["data"]["address"]
+        assert len(data["data"]["countersInfo"]) > 0
 
-    async def test_get_payments_history(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/payments_history_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
-
+    async def test_get_main_page_debt_info(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getPaymentsHistPage/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/main-page/debt/info",
+            payload=load_fixture("main_page_debt_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_payments_history(account)
+        data = await api.async_get_main_page_debt_info()
 
-        assert data is not None
-        assert data["result"]
-        assert data["history"]
-        for year in data["history"]:
-            for record in data["history"][year]:
-                assert record["SUMMA"]
-                assert record["DATE"]
+        assert data["result"] is True
 
-    async def test_get_accounts(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        with open("fixtures/accounts_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+    async def test_get_information(self, api: TNSEApi, session_mock: aioresponses) -> None:
+        session_mock.get(
+            f"{API_URL}/information?account={ACCOUNT}",
+            payload=load_fixture("information_response.json"),
+            headers=HEADERS,
+        )
+        data = await api.async_get_information(ACCOUNT)
 
+        assert data["result"] is True
+
+    async def test_get_counters(self, api: TNSEApi, session_mock: aioresponses) -> None:
+        session_mock.get(
+            f"{API_URL}/counters?account={ACCOUNT}",
+            payload=load_fixture("counters_response.json"),
+            headers=HEADERS,
+        )
+        data = await api.async_get_counters(ACCOUNT)
+
+        assert data["result"] is True
+        assert len(data["data"]) > 0
+        counter = data["data"][0]
+        assert counter["counterId"] == COUNTER_ID
+        assert counter["rowId"] == ROW_ID
+        assert counter["tariff"] == 2
+        assert len(counter["lastReadings"]) == 2
+
+    async def test_get_balance(self, api: TNSEApi, session_mock: aioresponses) -> None:
+        session_mock.get(
+            f"{API_URL}/payments/new-balance?account={ACCOUNT}",
+            payload=load_fixture("balance_response.json"),
+            headers=HEADERS,
+        )
+        data = await api.async_get_balance(ACCOUNT)
+
+        assert data["result"] is True
+        assert data["data"]["sumToPay"] == 1500.5
+
+    async def test_get_counter_readings(self, api: TNSEApi, session_mock: aioresponses) -> None:
+        session_mock.get(
+            f"{API_URL}/counters/{COUNTER_ID}/readings?account={ACCOUNT}",
+            payload=load_fixture("counter_readings_response.json"),
+            headers=HEADERS,
+        )
+        data = await api.async_get_counter_readings(COUNTER_ID, ACCOUNT)
+
+        assert data["result"] is True
+        assert len(data["data"]) > 0
+        reading = data["data"][0]
+        assert reading["date"]
+        assert len(reading["readings"]) == 2
+
+    async def test_send_readings(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.post(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"delegation/getLSListByLs/{account}/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/counters/send-readings",
+            payload=load_fixture("send_readings_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_accounts(account)
+        data = await api.async_send_readings(ACCOUNT, ROW_ID, ["2690", "1023"])
 
-        assert data is not None
-        assert data["result"]
+        assert data["result"] is True
 
-    async def test_get_main_page_info(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/main_page_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+    async def test_send_readings_empty(self, api: TNSEApi) -> None:
+        with pytest.raises(RequiredApiParamNotFound):
+            await api.async_send_readings(ACCOUNT, ROW_ID, [])
 
+    async def test_get_invoice_settings(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getMainPage/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/invoices/settings?account={ACCOUNT}",
+            payload=load_fixture("invoice_settings_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_main_page_info(account)
+        data = await api.async_get_invoice_settings(ACCOUNT)
 
-        assert data is not None
-        assert data["result"]
-        assert data["emailAndKvitStatus"]["ls"] == account
+        assert data["result"] is True
+        assert data["data"]["email"] == "user@example.com"
+        assert data["data"]["status"] is True
 
-    async def test_get_general_info(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/general_info_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
-
+    async def test_get_invoices(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getInfo/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/invoices?account={ACCOUNT}&year=2026",
+            payload=load_fixture("invoices_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_general_info(account)
+        data = await api.async_get_invoices(ACCOUNT, 2026)
 
-        assert data is not None
-        assert data["result"]
-        assert data["counters"]
-        for meter in data["counters"]:
-            assert meter["ZavodNomer"]
+        assert data["result"] is True
+        assert len(data["data"]) > 0
+        assert data["data"][0]["date"] == "01.01.2026"
 
-    async def test_get_bill(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        date = datetime(day=1, month=1, year=2023)
-        region = get_region(account)
-        with open("fixtures/bill_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+    async def test_get_invoice_file(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/getBill/ls/{account}/date/{date:%d.%m.%Y}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/invoices/get-file?account={ACCOUNT}&date=01.01.2026",
+            payload=load_fixture("invoice_file_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_get_bill(account, date)
+        data = await api.async_get_invoice_file(ACCOUNT, "01.01.2026")
 
-        assert data is not None
-        assert data["result"]
-        assert data["link"]
+        assert data["result"] is True
+        assert data["data"]["file"]
 
-    async def test_is_registered(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/registered_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
+    async def test_get_history(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/isLsRegisteredAndHasPayments/{account}/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
+            f"{API_URL}/history?account={ACCOUNT}&year=2026&month=2",
+            payload=load_fixture("history_response.json"),
+            headers=HEADERS,
         )
-        data = await api.async_is_registered(account)
+        data = await api.async_get_history(ACCOUNT, 2026, 2)
 
-        assert data is not None
-        assert data["result"]
-        assert data["ADDRESS"]
-
-    async def test_send_readings(self, api: TNSEApi, session_mock: aioresponses):
-        account = ACCOUNT
-        headers = HEADERS
-        region = get_region(account)
-        with open("fixtures/send_readings_request.json", encoding="utf-8") as file:
-            readings = json.load(file)
-        with open("fixtures/send_readings_response.json", encoding="utf-8") as file:
-            payload = json.load(file)
-        session_mock.post(
-            f"{DEFAULT_BASE_URL}/version/{DEFAULT_API_VERSION}/Android/mobile/"
-            f"region/{region}/action/sendReadings/ls/{account}/json/"
-            f"?hash={DEFAULT_HASH}",
-            payload=payload,
-            headers=headers,
-        )
-        data = await api.async_send_readings(account, readings)
-
-        assert data is not None
-        assert data["result"]
-        assert data["data"]
+        assert data["result"] is True
+        assert "filters" in data["data"]
+        assert "items" in data["data"]
+        assert len(data["data"]["items"]) > 0

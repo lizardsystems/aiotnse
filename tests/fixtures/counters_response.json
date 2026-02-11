@@ -1,0 +1,25 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": [
+        {
+            "counterId": "10000001",
+            "rowId": "2000001",
+            "installationType": "",
+            "tariff": 2,
+            "checkingDate": "01.01.2040",
+            "lastReadings": [
+                {
+                    "name": "День",
+                    "value": "3500",
+                    "date": "24.01.26"
+                },
+                {
+                    "name": "Ночь",
+                    "value": "1500",
+                    "date": "24.01.26"
+                }
+            ]
+        }
+    ]
+}

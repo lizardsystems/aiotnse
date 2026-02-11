@@ -1,0 +1,36 @@
+{
+    "result": true,
+    "statusCode": 200,
+    "data": [
+        {
+            "date": "24.01.26",
+            "readings": [
+                {
+                    "title": "День ПУ 10000001",
+                    "value": 5100,
+                    "consumption": 120
+                },
+                {
+                    "title": "Ночь ПУ 10000001",
+                    "value": 2200,
+                    "consumption": 60
+                }
+            ]
+        },
+        {
+            "date": "24.12.25",
+            "readings": [
+                {
+                    "title": "День ПУ 10000001",
+                    "value": 4980,
+                    "consumption": 110
+                },
+                {
+                    "title": "Ночь ПУ 10000001",
+                    "value": 2140,
+                    "consumption": 55
+                }
+            ]
+        }
+    ]
+}

@@ -1,19 +1,40 @@
 """TNS-Energo API wrapper."""
 from __future__ import annotations
 
-try:
-    from ._version import version as __version__
-    from ._version import version_tuple
-except ImportError:
-    __version__ = "unknown version"
-    version_tuple = (0, 0, "unknown version")
+from importlib.metadata import PackageNotFoundError, version
 
-from .api import TNSEApi
+try:
+    __version__ = version("aiotnse")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
+from .api import TNSEApi, async_get_regions
 from .auth import AbstractTNSEAuth, SimpleTNSEAuth
+from .exceptions import (
+    InvalidAccountNumber,
+    RegionNotFound,
+    RequiredApiParamNotFound,
+    TNSEApiError,
+    TNSEAuthError,
+    TNSETokenExpiredError,
+    TNSETokenRefreshError,
+)
+from .helpers import get_base_url, is_error_response, is_valid_account
 
 __all__ = [
-    "TNSEApi",
     "AbstractTNSEAuth",
+    "InvalidAccountNumber",
+    "RegionNotFound",
+    "RequiredApiParamNotFound",
     "SimpleTNSEAuth",
-    __version__
+    "TNSEApi",
+    "TNSEApiError",
+    "TNSEAuthError",
+    "TNSETokenExpiredError",
+    "TNSETokenRefreshError",
+    "__version__",
+    "async_get_regions",
+    "get_base_url",
+    "is_error_response",
+    "is_valid_account",
 ]
