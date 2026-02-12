@@ -7,13 +7,6 @@ from typing import Final
 
 LOGGER = logging.getLogger(__package__)
 
-LOG_LEVELS = {
-    0: logging.ERROR,
-    1: logging.WARNING,
-    2: logging.INFO,
-    3: logging.DEBUG,
-}
-
 BEARER_HEADER: Final = "authorizationtest"
 API_HASH_HEADER: Final = "x-api-hash"
 DEVICE_ID_HEADER: Final = "x-device-id"

@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `SimpleTNSEAuth`: `access_token_expires` and `refresh_token_expires` parameters and properties — store and expose JWT expiration timestamps from API responses
+- `SimpleTNSEAuth`: `token_update_callback` parameter — caller-provided callback invoked after login or token refresh with serialized token data for persistence
+- `SimpleTNSEAuth.async_get_access_token()`: automatic token management — returns cached token if valid, refreshes if access token expired, re-authenticates if both tokens expired
+- `SimpleTNSEAuth`: `asyncio.Lock` guard to prevent concurrent token refresh from parallel API calls
 - `async_get_regions(session)` — standalone function to get available regions without auth
 - `SimpleTNSEAuth.async_login()` — authenticate with email/password
 - `SimpleTNSEAuth.async_refresh_token()` — refresh JWT access token

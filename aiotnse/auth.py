@@ -1,7 +1,10 @@
 """TNS-Energo API Auth wrapper."""
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 from aiohttp import ClientSession
@@ -87,6 +90,9 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         password: str | None = None,
         access_token: str | None = None,
         refresh_token: str | None = None,
+        access_token_expires: datetime | None = None,
+        refresh_token_expires: datetime | None = None,
+        token_update_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         """Initialize the auth.
 
@@ -99,6 +105,10 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         self._password = password
         self._access_token = access_token
         self._refresh_token = refresh_token
+        self._access_token_expires = access_token_expires
+        self._refresh_token_expires = refresh_token_expires
+        self._token_update_callback = token_update_callback
+        self._token_lock = asyncio.Lock()
 
     @property
     def access_token(self) -> str | None:
@@ -110,8 +120,45 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         """Return current refresh token."""
         return self._refresh_token
 
+    @property
+    def access_token_expires(self) -> datetime | None:
+        """Return access token expiration time."""
+        return self._access_token_expires
+
+    @property
+    def refresh_token_expires(self) -> datetime | None:
+        """Return refresh token expiration time."""
+        return self._refresh_token_expires
+
     async def async_get_access_token(self) -> str | None:
-        """Return a valid access token."""
+        """Return a valid access token, refreshing if needed."""
+        if self._access_token and (
+            not self._access_token_expires
+            or datetime.now() < self._access_token_expires
+        ):
+            return self._access_token
+
+        async with self._token_lock:
+            # Re-check after acquiring lock — another coroutine may have refreshed
+            if self._access_token and (
+                not self._access_token_expires
+                or datetime.now() < self._access_token_expires
+            ):
+                return self._access_token
+
+            # Access token expired or missing — try refresh
+            if self._refresh_token and (
+                not self._refresh_token_expires
+                or datetime.now() < self._refresh_token_expires
+            ):
+                await self.async_refresh_token()
+                return self._access_token
+
+            # Refresh token also expired — try login
+            if self._email and self._password:
+                await self.async_login()
+                return self._access_token
+
         return self._access_token
 
     async def _async_auth_request(
@@ -160,6 +207,13 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         token_data = data["data"]
         self._access_token = token_data["accessToken"]
         self._refresh_token = token_data["refreshToken"]
+        self._access_token_expires = datetime.fromisoformat(
+            token_data["accessTokenExpires"]
+        )
+        self._refresh_token_expires = datetime.fromisoformat(
+            token_data["refreshTokenExpires"]
+        )
+        self._notify_token_update()
 
         LOGGER.debug("Login successful")
         return data
@@ -177,6 +231,10 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         )
 
         self._access_token = data["data"]["accessToken"]
+        self._access_token_expires = datetime.fromisoformat(
+            data["data"]["accessTokenExpires"]
+        )
+        self._notify_token_update()
 
         LOGGER.debug("Token refresh successful")
         return data
@@ -187,6 +245,26 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
 
         self._access_token = None
         self._refresh_token = None
+        self._access_token_expires = None
+        self._refresh_token_expires = None
 
         LOGGER.debug("Logout successful")
         return data
+
+    def _notify_token_update(self) -> None:
+        """Notify callback about token changes."""
+        if self._token_update_callback:
+            self._token_update_callback({
+                "access_token": self._access_token,
+                "refresh_token": self._refresh_token,
+                "access_token_expires": (
+                    self._access_token_expires.isoformat()
+                    if self._access_token_expires
+                    else None
+                ),
+                "refresh_token_expires": (
+                    self._refresh_token_expires.isoformat()
+                    if self._refresh_token_expires
+                    else None
+                ),
+            })

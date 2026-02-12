@@ -53,15 +53,30 @@ if __name__ == "__main__":
     asyncio.run(main(_email, _password, _region))
 ```
 
-You can also restore a session with saved tokens:
+You can also restore a session with saved tokens. The `async_get_access_token()` method
+automatically refreshes expired tokens or re-authenticates when needed:
 
 ```python
+from datetime import datetime
+
+
+def on_token_update(token_data: dict) -> None:
+    """Called after login or token refresh — persist the new tokens."""
+    save_to_storage(token_data)
+
+
 auth = SimpleTNSEAuth(
     session,
     region="rostov",
+    email=email,
+    password=password,
     access_token="saved_access_token",
     refresh_token="saved_refresh_token",
+    access_token_expires=datetime.fromisoformat("2026-06-09T19:42:16"),
+    refresh_token_expires=datetime.fromisoformat("2026-10-09T19:42:16"),
+    token_update_callback=on_token_update,
 )
+# No need to call async_login() — tokens will be refreshed automatically on first API call
 ```
 
 ## Contributors

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from base64 import b64encode
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock
 
 import aiohttp
 import pytest
@@ -13,11 +15,13 @@ from aiotnse.const import DEVICE_ID, _DEVICE_IDS
 from aiotnse.exceptions import TNSEApiError, TNSEAuthError, TNSETokenRefreshError
 from tests.common import (
     ACCESS_TOKEN,
+    ACCESS_TOKEN_EXPIRES,
     API_URL,
     EMAIL,
     HEADERS,
     PASSWORD,
     REFRESH_TOKEN,
+    REFRESH_TOKEN_EXPIRES,
     REGION,
 )
 from tests.conftest import load_fixture
@@ -57,6 +61,12 @@ class TestSimpleTNSEAuth:
         assert data["statusCode"] == 200
         assert login_auth.access_token == "test_access_token_new"
         assert login_auth.refresh_token == "test_refresh_token_new"
+        assert login_auth.access_token_expires == datetime.fromisoformat(
+            ACCESS_TOKEN_EXPIRES
+        )
+        assert login_auth.refresh_token_expires == datetime.fromisoformat(
+            REFRESH_TOKEN_EXPIRES
+        )
 
     async def test_login_wrong_credentials(
         self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
@@ -85,6 +95,9 @@ class TestSimpleTNSEAuth:
 
         assert data["result"] is True
         assert auth.access_token == "test_access_token_refreshed"
+        assert auth.access_token_expires == datetime.fromisoformat(
+            "2026-06-09 21:06:40"
+        )
 
     async def test_refresh_token_no_token(
         self, no_creds_auth: SimpleTNSEAuth
@@ -105,6 +118,8 @@ class TestSimpleTNSEAuth:
         assert data["result"] is True
         assert auth.access_token is None
         assert auth.refresh_token is None
+        assert auth.access_token_expires is None
+        assert auth.refresh_token_expires is None
 
     async def test_request_error_response(
         self, auth: SimpleTNSEAuth, session_mock: aioresponses
@@ -148,3 +163,117 @@ class TestSimpleTNSEAuth:
         headers = auth._build_headers()
         assert headers["x-device-id"] == DEVICE_ID
         assert DEVICE_ID in _DEVICE_IDS
+
+    async def test_token_update_callback_on_login(
+        self, session_mock: aioresponses
+    ) -> None:
+        """Test that token_update_callback is called after login."""
+        callback = MagicMock()
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                email=EMAIL,
+                password=PASSWORD,
+                token_update_callback=callback,
+            )
+            session_mock.post(
+                f"{API_URL}/user/auth",
+                payload=load_fixture("auth_response.json"),
+                headers=HEADERS,
+            )
+            await auth.async_login()
+
+        callback.assert_called_once()
+        token_data = callback.call_args[0][0]
+        assert token_data["access_token"] == "test_access_token_new"
+        assert token_data["refresh_token"] == "test_refresh_token_new"
+        assert token_data["access_token_expires"] is not None
+        assert token_data["refresh_token_expires"] is not None
+
+    async def test_token_update_callback_on_refresh(
+        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+    ) -> None:
+        """Test that token_update_callback is called after refresh."""
+        callback = MagicMock()
+        auth._token_update_callback = callback
+        session_mock.post(
+            f"{API_URL}/user/refresh-token",
+            payload=load_fixture("refresh_token_response.json"),
+            headers=HEADERS,
+        )
+        await auth.async_refresh_token()
+
+        callback.assert_called_once()
+        token_data = callback.call_args[0][0]
+        assert token_data["access_token"] == "test_access_token_refreshed"
+        assert token_data["access_token_expires"] is not None
+
+    async def test_get_access_token_valid(self) -> None:
+        """Test async_get_access_token returns token when not expired."""
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+                access_token_expires=datetime.now() + timedelta(hours=1),
+            )
+            token = await auth.async_get_access_token()
+        assert token == ACCESS_TOKEN
+
+    async def test_get_access_token_expired_triggers_refresh(
+        self, session_mock: aioresponses
+    ) -> None:
+        """Test async_get_access_token refreshes when access token is expired."""
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+                access_token_expires=datetime.now() - timedelta(hours=1),
+                refresh_token_expires=datetime.now() + timedelta(days=30),
+            )
+            session_mock.post(
+                f"{API_URL}/user/refresh-token",
+                payload=load_fixture("refresh_token_response.json"),
+                headers=HEADERS,
+            )
+            token = await auth.async_get_access_token()
+        assert token == "test_access_token_refreshed"
+
+    async def test_get_access_token_both_expired_triggers_login(
+        self, session_mock: aioresponses
+    ) -> None:
+        """Test async_get_access_token re-logs in when both tokens are expired."""
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                email=EMAIL,
+                password=PASSWORD,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+                access_token_expires=datetime.now() - timedelta(hours=1),
+                refresh_token_expires=datetime.now() - timedelta(hours=1),
+            )
+            session_mock.post(
+                f"{API_URL}/user/auth",
+                payload=load_fixture("auth_response.json"),
+                headers=HEADERS,
+            )
+            token = await auth.async_get_access_token()
+        assert token == "test_access_token_new"
+
+    async def test_get_access_token_no_expiration(self) -> None:
+        """Test async_get_access_token returns token when no expiration set."""
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+            )
+            token = await auth.async_get_access_token()
+        assert token == ACCESS_TOKEN

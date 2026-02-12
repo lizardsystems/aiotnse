@@ -6,14 +6,21 @@ import asyncio
 import logging
 import sys
 from pprint import pprint
+from typing import Any
 
 from aiohttp import ClientError, ClientSession
 
 from . import __version__
 from .api import TNSEApi, async_get_regions
 from .auth import SimpleTNSEAuth
-from .const import LOG_LEVELS
 from .exceptions import TNSEApiError
+
+_LOG_LEVELS = {
+    0: logging.ERROR,
+    1: logging.WARNING,
+    2: logging.INFO,
+    3: logging.DEBUG,
+}
 
 
 def _die(message: str) -> None:
@@ -62,7 +69,7 @@ def get_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def _print_regions(session: ClientSession) -> list[dict]:
+async def _print_regions(session: ClientSession) -> list[dict[str, Any]]:
     """Fetch and print available regions. Return the region list."""
     data = await async_get_regions(session)
     regions = data["data"]
@@ -138,7 +145,7 @@ async def _execute_command(api: TNSEApi, args: argparse.Namespace) -> None:
 async def cli() -> None:
     """Run main."""
     args = get_arguments()
-    logging.basicConfig(level=LOG_LEVELS.get(args.verbose, logging.INFO))
+    logging.basicConfig(level=_LOG_LEVELS.get(args.verbose, logging.INFO))
 
     try:
         async with ClientSession() as session:
@@ -163,7 +170,3 @@ async def cli() -> None:
         _die(f"Connection failed: {err}")
     except TNSEApiError as err:
         _die(f"API error: {err}")
-
-
-if __name__ == "__main__":
-    asyncio.run(cli())
