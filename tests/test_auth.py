@@ -138,6 +138,28 @@ class TestSimpleTNSEAuth:
         with pytest.raises(TNSEApiError, match="Some API error"):
             await auth.request("GET", "some-endpoint")
 
+    async def test_request_http_error(
+        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+    ) -> None:
+        """Verify request() wraps HTTP errors in TNSEApiError."""
+        session_mock.get(
+            f"{API_URL}/some-endpoint",
+            status=500,
+        )
+        with pytest.raises(TNSEApiError, match="500"):
+            await auth.request("GET", "some-endpoint")
+
+    async def test_login_http_error(
+        self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
+    ) -> None:
+        """Verify async_login wraps HTTP errors in TNSEAuthError."""
+        session_mock.post(
+            f"{API_URL}/user/auth",
+            status=403,
+        )
+        with pytest.raises(TNSEAuthError, match="403"):
+            await login_auth.async_login()
+
     async def test_basic_auth_rostov(self, auth: SimpleTNSEAuth) -> None:
         expected = "Basic " + b64encode(b"mobile-api-rostov:mobile-api-rostov").decode()
         headers = auth._build_headers()

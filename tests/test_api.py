@@ -8,7 +8,7 @@ from aioresponses import aioresponses
 from aiotnse import TNSEApi
 from aiotnse.api import async_get_regions
 from aiotnse.const import DEFAULT_APP_VERSION
-from aiotnse.exceptions import RequiredApiParamNotFound
+from aiotnse.exceptions import RequiredApiParamNotFound, TNSEApiError
 from tests.common import (
     ACCOUNT,
     ACCOUNT_ID,
@@ -36,6 +36,18 @@ class TestAsyncGetRegions:
         assert len(data["data"]) > 0
         codes = [r["code"] for r in data["data"]]
         assert "rostov" in codes
+
+
+    async def test_get_regions_http_error(self) -> None:
+        """Test async_get_regions wraps HTTP errors in TNSEApiError."""
+        with aioresponses() as mock:
+            mock.get(
+                f"{API_URL}/contacts/regions",
+                status=403,
+            )
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(TNSEApiError, match="403"):
+                    await async_get_regions(session)
 
 
 class TestTNSEApi:

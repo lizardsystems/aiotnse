@@ -7,7 +7,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession
 
 from .const import (
     BEARER_HEADER,
@@ -65,11 +65,16 @@ class AbstractTNSEAuth(ABC):
         url = self._build_url(path)
 
         LOGGER.debug("Request %s %s", method, url)
-        async with self._session.request(
-            method, url, **kwargs, headers=headers, raise_for_status=True
-        ) as resp:
-            data = await resp.json()
-            LOGGER.debug("Response status=%s", resp.status)
+        try:
+            async with self._session.request(
+                method, url, **kwargs, headers=headers, raise_for_status=True
+            ) as resp:
+                data = await resp.json()
+                LOGGER.debug("Response status=%s", resp.status)
+        except ClientResponseError as err:
+            raise TNSEApiError(
+                f"API request failed: {err.status} {err.message}"
+            ) from err
 
         if isinstance(data, dict) and not data.get("result"):
             error = data.get("error", {})
@@ -171,14 +176,19 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         """Make an auth POST request without Bearer token."""
         url = self._build_url(path)
         LOGGER.debug("Auth request to %s", url)
-        async with self._session.request(
-            "POST",
-            url,
-            json=json_data,
-            headers=self._build_headers(),
-            raise_for_status=True,
-        ) as resp:
-            data = await resp.json()
+        try:
+            async with self._session.request(
+                "POST",
+                url,
+                json=json_data,
+                headers=self._build_headers(),
+                raise_for_status=True,
+            ) as resp:
+                data = await resp.json()
+        except ClientResponseError as err:
+            raise error_class(
+                f"{default_error}: {err.status} {err.message}"
+            ) from err
 
         if not data.get("result"):
             error = data.get("error", {})

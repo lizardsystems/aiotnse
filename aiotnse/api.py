@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession
 
 from .auth import AbstractTNSEAuth
 from .const import (
@@ -13,7 +13,7 @@ from .const import (
     DEFAULT_REGION,
     DEVICE_ID,
 )
-from .exceptions import RequiredApiParamNotFound
+from .exceptions import RequiredApiParamNotFound, TNSEApiError
 from .helpers import build_request_headers, get_base_url
 
 
@@ -26,8 +26,13 @@ async def async_get_regions(session: ClientSession) -> dict[str, Any]:
     base_url = get_base_url(DEFAULT_REGION)
     url = f"{base_url}/{DEFAULT_API_PATH}/contacts/regions"
     headers = build_request_headers(DEFAULT_REGION, DEVICE_ID)
-    async with session.get(url, headers=headers, raise_for_status=True) as resp:
-        return await resp.json()
+    try:
+        async with session.get(url, headers=headers, raise_for_status=True) as resp:
+            return await resp.json()
+    except ClientResponseError as err:
+        raise TNSEApiError(
+            f"API request failed: {err.status} {err.message}"
+        ) from err
 
 
 class TNSEApi:
