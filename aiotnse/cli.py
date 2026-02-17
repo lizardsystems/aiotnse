@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
 import logging
 import sys
 from pprint import pprint
@@ -11,7 +10,7 @@ from typing import Any
 from aiohttp import ClientError, ClientSession
 
 from . import __version__
-from .api import TNSEApi, async_get_regions
+from .api import TNSEApi, async_check_version, async_get_regions
 from .auth import SimpleTNSEAuth
 from .exceptions import TNSEApiError
 
@@ -71,8 +70,7 @@ def get_arguments() -> argparse.Namespace:
 
 async def _print_regions(session: ClientSession) -> list[dict[str, Any]]:
     """Fetch and print available regions. Return the region list."""
-    data = await async_get_regions(session)
-    regions = data["data"]
+    regions = await async_get_regions(session)
     print("Available regions:")
     for i, r in enumerate(regions, 1):
         print(f"  {i}. {r['name']} ({r['code']})")
@@ -101,12 +99,8 @@ async def _send_readings(api: TNSEApi, args: argparse.Namespace) -> None:
         print("Cancelled.")
         return
 
-    data = await api.async_send_readings(args.account, args.row_id, readings)
-    if data.get("result"):
-        print("Readings sent successfully.")
-    else:
-        print("Failed to send readings.")
-        pprint(data)
+    await api.async_send_readings(args.account, args.row_id, readings)
+    print("Readings sent successfully.")
 
 
 async def _execute_command(api: TNSEApi, args: argparse.Namespace) -> None:
@@ -115,9 +109,7 @@ async def _execute_command(api: TNSEApi, args: argparse.Namespace) -> None:
         await _send_readings(api, args)
         return
 
-    if args.version_check:
-        result = await api.async_check_version()
-    elif args.user:
+    if args.user:
         result = await api.async_get_user_info()
     elif args.accounts:
         result = await api.async_get_accounts()
@@ -151,6 +143,10 @@ async def cli() -> None:
         async with ClientSession() as session:
             if args.regions:
                 await _print_regions(session)
+                return
+
+            if args.version_check:
+                pprint(await async_check_version(session))
                 return
 
             if not args.email or not args.password:

@@ -6,7 +6,7 @@ import pytest
 from aioresponses import aioresponses
 
 from aiotnse import TNSEApi
-from aiotnse.api import async_get_regions
+from aiotnse.api import async_check_version, async_get_regions
 from aiotnse.const import DEFAULT_APP_VERSION
 from aiotnse.exceptions import RequiredApiParamNotFound, TNSEApiError
 from tests.common import (
@@ -32,11 +32,9 @@ class TestAsyncGetRegions:
             async with aiohttp.ClientSession() as session:
                 data = await async_get_regions(session)
 
-        assert data["result"] is True
-        assert len(data["data"]) > 0
-        codes = [r["code"] for r in data["data"]]
+        assert len(data) > 0
+        codes = [r["code"] for r in data]
         assert "rostov" in codes
-
 
     async def test_get_regions_http_error(self) -> None:
         """Test async_get_regions wraps HTTP errors in TNSEApiError."""
@@ -49,19 +47,38 @@ class TestAsyncGetRegions:
                 with pytest.raises(TNSEApiError, match="403"):
                     await async_get_regions(session)
 
+    async def test_get_regions_http_error_with_body(self) -> None:
+        """Test async_get_regions includes API error description from body."""
+        with aioresponses() as mock:
+            mock.get(
+                f"{API_URL}/contacts/regions",
+                status=403,
+                payload={
+                    "result": False,
+                    "error": {"description": "Access denied"},
+                },
+            )
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(TNSEApiError, match="Access denied.*403"):
+                    await async_get_regions(session)
+
+
+class TestAsyncCheckVersion:
+    async def test_check_version(self) -> None:
+        """Test standalone async_check_version() without auth."""
+        with aioresponses() as mock:
+            mock.get(
+                f"{API_URL}/app/version?version={DEFAULT_APP_VERSION}",
+                payload=load_fixture("app_version_response.json"),
+                headers=HEADERS,
+            )
+            async with aiohttp.ClientSession() as session:
+                data = await async_check_version(session)
+
+        assert data["status"] == 1
+
 
 class TestTNSEApi:
-    async def test_check_version(self, api: TNSEApi, session_mock: aioresponses) -> None:
-        session_mock.get(
-            f"{API_URL}/app/version?version={DEFAULT_APP_VERSION}",
-            payload=load_fixture("app_version_response.json"),
-            headers=HEADERS,
-        )
-        data = await api.async_check_version()
-
-        assert data["result"] is True
-        assert data["data"]["status"] == 1
-
     async def test_get_user_info(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
             f"{API_URL}/user",
@@ -70,9 +87,8 @@ class TestTNSEApi:
         )
         data = await api.async_get_user_info()
 
-        assert data["result"] is True
-        assert data["data"]["email"] == "user@example.com"
-        assert data["data"]["region"] == "rostov"
+        assert data["email"] == "user@example.com"
+        assert data["region"] == "rostov"
 
     async def test_get_accounts(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -82,10 +98,9 @@ class TestTNSEApi:
         )
         data = await api.async_get_accounts()
 
-        assert data["result"] is True
-        assert len(data["data"]) == 2
-        assert data["data"][0]["id"] == ACCOUNT_ID
-        assert data["data"][0]["number"] == ACCOUNT
+        assert len(data) == 2
+        assert data[0]["id"] == ACCOUNT_ID
+        assert data[0]["number"] == ACCOUNT
 
     async def test_get_account_info(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -95,11 +110,10 @@ class TestTNSEApi:
         )
         data = await api.async_get_account_info(ACCOUNT_ID)
 
-        assert data["result"] is True
-        assert data["data"]["id"] == ACCOUNT_ID
-        assert data["data"]["number"] == ACCOUNT
-        assert data["data"]["address"]
-        assert len(data["data"]["countersInfo"]) > 0
+        assert data["id"] == ACCOUNT_ID
+        assert data["number"] == ACCOUNT
+        assert data["address"]
+        assert len(data["countersInfo"]) > 0
 
     async def test_get_main_page_debt_info(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -109,7 +123,7 @@ class TestTNSEApi:
         )
         data = await api.async_get_main_page_debt_info()
 
-        assert data["result"] is True
+        assert data == []
 
     async def test_get_information(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -119,7 +133,7 @@ class TestTNSEApi:
         )
         data = await api.async_get_information(ACCOUNT)
 
-        assert data["result"] is True
+        assert data == []
 
     async def test_get_counters(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -129,9 +143,8 @@ class TestTNSEApi:
         )
         data = await api.async_get_counters(ACCOUNT)
 
-        assert data["result"] is True
-        assert len(data["data"]) > 0
-        counter = data["data"][0]
+        assert len(data) > 0
+        counter = data[0]
         assert counter["counterId"] == COUNTER_ID
         assert counter["rowId"] == ROW_ID
         assert counter["tariff"] == 2
@@ -145,8 +158,7 @@ class TestTNSEApi:
         )
         data = await api.async_get_balance(ACCOUNT)
 
-        assert data["result"] is True
-        assert data["data"]["sumToPay"] == 1500.5
+        assert data["sumToPay"] == 1500.5
 
     async def test_get_counter_readings(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -156,9 +168,8 @@ class TestTNSEApi:
         )
         data = await api.async_get_counter_readings(COUNTER_ID, ACCOUNT)
 
-        assert data["result"] is True
-        assert len(data["data"]) > 0
-        reading = data["data"][0]
+        assert len(data) > 0
+        reading = data[0]
         assert reading["date"]
         assert len(reading["readings"]) == 2
 
@@ -170,7 +181,7 @@ class TestTNSEApi:
         )
         data = await api.async_send_readings(ACCOUNT, ROW_ID, ["2690", "1023"])
 
-        assert data["result"] is True
+        assert data == []
 
     async def test_send_readings_empty(self, api: TNSEApi) -> None:
         with pytest.raises(RequiredApiParamNotFound):
@@ -184,9 +195,8 @@ class TestTNSEApi:
         )
         data = await api.async_get_invoice_settings(ACCOUNT)
 
-        assert data["result"] is True
-        assert data["data"]["email"] == "user@example.com"
-        assert data["data"]["status"] is True
+        assert data["email"] == "user@example.com"
+        assert data["status"] is True
 
     async def test_get_invoices(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -196,9 +206,8 @@ class TestTNSEApi:
         )
         data = await api.async_get_invoices(ACCOUNT, 2026)
 
-        assert data["result"] is True
-        assert len(data["data"]) > 0
-        assert data["data"][0]["date"] == "01.01.2026"
+        assert len(data) > 0
+        assert data[0]["date"] == "01.01.2026"
 
     async def test_get_invoice_file(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -208,8 +217,7 @@ class TestTNSEApi:
         )
         data = await api.async_get_invoice_file(ACCOUNT, "01.01.2026")
 
-        assert data["result"] is True
-        assert data["data"]["file"]
+        assert data["file"]
 
     async def test_get_history(self, api: TNSEApi, session_mock: aioresponses) -> None:
         session_mock.get(
@@ -219,7 +227,6 @@ class TestTNSEApi:
         )
         data = await api.async_get_history(ACCOUNT, 2026, 2)
 
-        assert data["result"] is True
-        assert "filters" in data["data"]
-        assert "items" in data["data"]
-        assert len(data["data"]["items"]) > 0
+        assert "filters" in data
+        assert "items" in data
+        assert len(data["items"]) > 0

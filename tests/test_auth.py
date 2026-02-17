@@ -57,8 +57,7 @@ class TestSimpleTNSEAuth:
         )
         data = await login_auth.async_login()
 
-        assert data["result"] is True
-        assert data["statusCode"] == 200
+        assert data["accessToken"] == "test_access_token_new"
         assert login_auth.access_token == "test_access_token_new"
         assert login_auth.refresh_token == "test_refresh_token_new"
         assert login_auth.access_token_expires == datetime.fromisoformat(
@@ -93,7 +92,7 @@ class TestSimpleTNSEAuth:
         )
         data = await auth.async_refresh_token()
 
-        assert data["result"] is True
+        assert data["accessToken"] == "test_access_token_refreshed"
         assert auth.access_token == "test_access_token_refreshed"
         assert auth.access_token_expires == datetime.fromisoformat(
             "2026-06-09 21:06:40"
@@ -115,7 +114,7 @@ class TestSimpleTNSEAuth:
         )
         data = await auth.async_logout()
 
-        assert data["result"] is True
+        assert data == []
         assert auth.access_token is None
         assert auth.refresh_token is None
         assert auth.access_token_expires is None
@@ -149,6 +148,21 @@ class TestSimpleTNSEAuth:
         with pytest.raises(TNSEApiError, match="500"):
             await auth.request("GET", "some-endpoint")
 
+    async def test_request_http_error_with_body(
+        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+    ) -> None:
+        """Verify request() includes API error description from response body."""
+        session_mock.get(
+            f"{API_URL}/some-endpoint",
+            status=400,
+            payload={
+                "result": False,
+                "error": {"description": "Account not found"},
+            },
+        )
+        with pytest.raises(TNSEApiError, match="Account not found.*400"):
+            await auth.request("GET", "some-endpoint")
+
     async def test_login_http_error(
         self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
     ) -> None:
@@ -158,6 +172,21 @@ class TestSimpleTNSEAuth:
             status=403,
         )
         with pytest.raises(TNSEAuthError, match="403"):
+            await login_auth.async_login()
+
+    async def test_login_http_error_with_body(
+        self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
+    ) -> None:
+        """Verify async_login includes API error description from response body."""
+        session_mock.post(
+            f"{API_URL}/user/auth",
+            status=401,
+            payload={
+                "result": False,
+                "error": {"description": "Token expired"},
+            },
+        )
+        with pytest.raises(TNSEAuthError, match="Token expired.*401"):
             await login_auth.async_login()
 
     async def test_basic_auth_rostov(self, auth: SimpleTNSEAuth) -> None:

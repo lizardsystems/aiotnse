@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-02-16
+
+### Breaking
+
+- `parse_api_response()` now returns payload (`data["data"]`) instead of the full API wrapper `{"result", "statusCode", "data"}` — all API methods return the inner payload directly
+- `async_check_version()` is now a standalone module-level function (like `async_get_regions`) — accepts `ClientSession` and optional `region`, no longer requires auth
+- All public API/auth method return types changed from `dict[str, Any]` to `Any`
+
+### Improved
+
+- Read HTTP error response body before raising exceptions — API error descriptions (e.g. "Account not found") are now included in `TNSEApiError`/`TNSEAuthError` messages instead of generic "400 Bad Request"
+- Remove `raise_for_status=True` from all request methods — parse response body manually for richer error diagnostics
+- Extract `parse_api_response()` helper — eliminates 3x duplicated response error handling in `request()`, `_async_auth_request()`, and `async_get_regions()`
+- Catch specific `json.JSONDecodeError` and `aiohttp.ContentTypeError` instead of bare `except Exception` when parsing response JSON, with proper exception chaining (`from err`)
+- Add debug logging throughout: token state decisions in `async_get_access_token()`, callback invocation in `_notify_token_update()`, request/response in `async_get_regions()`
+
+### Changed
+
+- Expand `examples/example.py` — full API usage flow: regions, login, accounts, account info, balance, counters, readings history, last payment, logout
+
+### Removed
+
+- Remove `is_error_response()` helper — unused dead code, replaced by `parse_api_response()`
+
 ## [2.0.2] - 2026-02-12
 
 ### Fixed

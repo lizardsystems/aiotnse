@@ -14,7 +14,6 @@ from aiotnse.const import (
 from aiotnse.helpers import (
     build_request_headers,
     get_base_url,
-    is_error_response,
     is_valid_account,
 )
 
@@ -58,25 +57,3 @@ class TestGetBaseUrl:
         assert get_base_url("rostov") == "https://mobile-api-rostov.tns-e.ru"
         assert get_base_url("penza") == "https://mobile-api-penza.tns-e.ru"
         assert get_base_url("nn") == "https://mobile-api-nn.tns-e.ru"
-
-
-class TestIsErrorResponse:
-    def test_success(self) -> None:
-        response = {"result": True, "statusCode": 200, "data": []}
-        assert is_error_response(response) is False
-
-    def test_false_result(self) -> None:
-        response = {"result": False, "statusCode": 400, "error": {"description": "Error"}}
-        assert is_error_response(response) is True
-
-    def test_bad_status_code(self) -> None:
-        response = {"result": True, "statusCode": 500, "data": []}
-        assert is_error_response(response) is True
-
-    def test_missing_result(self) -> None:
-        assert is_error_response({}) is True
-
-    def test_non_dict_types(self) -> None:
-        assert is_error_response("string") is True
-        assert is_error_response(None) is True
-        assert is_error_response([]) is True

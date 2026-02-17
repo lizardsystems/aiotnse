@@ -8,7 +8,7 @@ try:
 except PackageNotFoundError:
     __version__ = "unknown"
 
-from .api import TNSEApi, async_get_regions
+from .api import TNSEApi, async_check_version, async_get_regions
 from .auth import AbstractTNSEAuth, SimpleTNSEAuth
 from .exceptions import (
     InvalidAccountNumber,
@@ -19,7 +19,7 @@ from .exceptions import (
     TNSETokenExpiredError,
     TNSETokenRefreshError,
 )
-from .helpers import get_base_url, is_error_response, is_valid_account
+from .helpers import get_base_url, is_valid_account
 
 __all__ = [
     "AbstractTNSEAuth",
@@ -33,8 +33,8 @@ __all__ = [
     "TNSETokenExpiredError",
     "TNSETokenRefreshError",
     "__version__",
+    "async_check_version",
     "async_get_regions",
     "get_base_url",
-    "is_error_response",
     "is_valid_account",
 ]

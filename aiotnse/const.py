@@ -7,6 +7,8 @@ from typing import Final
 
 LOGGER = logging.getLogger(__package__)
 
+# Non-standard header name used by the TNS-Energo API for JWT Bearer tokens
+# (the standard "Authorization" header carries the Basic auth credentials).
 BEARER_HEADER: Final = "authorizationtest"
 API_HASH_HEADER: Final = "x-api-hash"
 DEVICE_ID_HEADER: Final = "x-device-id"

@@ -7,7 +7,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientSession
 
 from .const import (
     BEARER_HEADER,
@@ -16,8 +16,8 @@ from .const import (
     DEVICE_ID,
     LOGGER,
 )
-from .exceptions import TNSEApiError, TNSEAuthError, TNSETokenRefreshError
-from .helpers import build_request_headers, get_base_url
+from .exceptions import TNSEAuthError, TNSETokenRefreshError
+from .helpers import build_request_headers, get_base_url, parse_api_response
 
 
 class AbstractTNSEAuth(ABC):
@@ -64,23 +64,21 @@ class AbstractTNSEAuth(ABC):
 
         url = self._build_url(path)
 
-        LOGGER.debug("Request %s %s", method, url)
-        try:
-            async with self._session.request(
-                method, url, **kwargs, headers=headers, raise_for_status=True
-            ) as resp:
-                data = await resp.json()
-                LOGGER.debug("Response status=%s", resp.status)
-        except ClientResponseError as err:
-            raise TNSEApiError(
-                f"API request failed: {err.status} {err.message}"
-            ) from err
+        if params := kwargs.get("params"):
+            LOGGER.debug("API request: %s /%s params=%s", method, path, params)
+        elif json_body := kwargs.get("json"):
+            LOGGER.debug("API request: %s /%s json=%s", method, path, json_body)
+        else:
+            LOGGER.debug("API request: %s /%s", method, path)
 
-        if isinstance(data, dict) and not data.get("result"):
-            error = data.get("error", {})
-            raise TNSEApiError(error.get("description", "API request failed"))
-
-        return data
+        async with self._session.request(
+            method, url, **kwargs, headers=headers
+        ) as resp:
+            data = await parse_api_response(resp)
+            LOGGER.debug(
+                "API response: %s /%s -> %d: %s", method, path, resp.status, data
+            )
+            return data
 
 
 class SimpleTNSEAuth(AbstractTNSEAuth):
@@ -156,13 +154,17 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
                 not self._refresh_token_expires
                 or datetime.now() < self._refresh_token_expires
             ):
+                LOGGER.debug("Access token expired, refreshing via refresh token")
                 await self.async_refresh_token()
                 return self._access_token
 
             # Refresh token also expired — try login
             if self._email and self._password:
+                LOGGER.debug("Both tokens expired, re-authenticating")
                 await self.async_login()
                 return self._access_token
+
+            LOGGER.debug("No valid token and no recovery path available")
 
         return self._access_token
 
@@ -172,31 +174,29 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
         json_data: dict[str, Any],
         error_class: type[TNSEAuthError],
         default_error: str,
-    ) -> dict[str, Any]:
+    ) -> Any:
         """Make an auth POST request without Bearer token."""
         url = self._build_url(path)
-        LOGGER.debug("Auth request to %s", url)
-        try:
-            async with self._session.request(
-                "POST",
-                url,
-                json=json_data,
-                headers=self._build_headers(),
-                raise_for_status=True,
-            ) as resp:
-                data = await resp.json()
-        except ClientResponseError as err:
-            raise error_class(
-                f"{default_error}: {err.status} {err.message}"
-            ) from err
+        LOGGER.debug(
+            "Auth request: POST /%s keys=%s", path, list(json_data.keys())
+        )
+        async with self._session.request(
+            "POST",
+            url,
+            json=json_data,
+            headers=self._build_headers(),
+        ) as resp:
+            data = await parse_api_response(
+                resp,
+                error_class=error_class,
+                default_error=default_error,
+            )
+            LOGGER.debug(
+                "Auth response: POST /%s -> %d: %s", path, resp.status, data
+            )
+            return data
 
-        if not data.get("result"):
-            error = data.get("error", {})
-            raise error_class(error.get("description", default_error))
-
-        return data
-
-    async def async_login(self) -> dict[str, Any]:
+    async def async_login(self) -> Any:
         """Authenticate with email and password."""
         if not self._email or not self._password:
             raise TNSEAuthError("Email and password are required for login")
@@ -214,21 +214,20 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
             "Authentication failed",
         )
 
-        token_data = data["data"]
-        self._access_token = token_data["accessToken"]
-        self._refresh_token = token_data["refreshToken"]
+        self._access_token = data["accessToken"]
+        self._refresh_token = data["refreshToken"]
         self._access_token_expires = datetime.fromisoformat(
-            token_data["accessTokenExpires"]
+            data["accessTokenExpires"]
         )
         self._refresh_token_expires = datetime.fromisoformat(
-            token_data["refreshTokenExpires"]
+            data["refreshTokenExpires"]
         )
         self._notify_token_update()
 
         LOGGER.debug("Login successful")
         return data
 
-    async def async_refresh_token(self) -> dict[str, Any]:
+    async def async_refresh_token(self) -> Any:
         """Refresh the access token."""
         if not self._refresh_token:
             raise TNSETokenRefreshError("No refresh token available")
@@ -240,16 +239,16 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
             "Token refresh failed",
         )
 
-        self._access_token = data["data"]["accessToken"]
+        self._access_token = data["accessToken"]
         self._access_token_expires = datetime.fromisoformat(
-            data["data"]["accessTokenExpires"]
+            data["accessTokenExpires"]
         )
         self._notify_token_update()
 
         LOGGER.debug("Token refresh successful")
         return data
 
-    async def async_logout(self) -> dict[str, Any]:
+    async def async_logout(self) -> Any:
         """Logout and invalidate tokens."""
         data = await self.request("POST", "user/logout")
 
