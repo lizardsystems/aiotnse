@@ -317,6 +317,63 @@ class TestSimpleTNSEAuth:
             token = await auth.async_get_access_token()
         assert token == "test_access_token_new"
 
+    async def test_get_access_token_refresh_rejected_falls_back_to_login(
+        self, session_mock: aioresponses
+    ) -> None:
+        """Refresh rejected by server (403/HTML) falls back to login.
+
+        Regression test for hass-tnse issue #14: the refresh token is still
+        valid by local timestamp, but the server answers the refresh request
+        with HTTP 403 and an HTML body. With stored credentials the client
+        must re-login instead of surfacing a token refresh error.
+        """
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                email=EMAIL,
+                password=PASSWORD,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+                access_token_expires=datetime.now() - timedelta(hours=1),
+                refresh_token_expires=datetime.now() + timedelta(days=30),
+            )
+            session_mock.post(
+                f"{API_URL}/user/refresh-token",
+                status=403,
+                body="<html><body>403 Forbidden</body></html>",
+                content_type="text/html",
+            )
+            session_mock.post(
+                f"{API_URL}/user/auth",
+                payload=load_fixture("auth_response.json"),
+                headers=HEADERS,
+            )
+            token = await auth.async_get_access_token()
+        assert token == "test_access_token_new"
+
+    async def test_get_access_token_refresh_rejected_no_creds_raises(
+        self, session_mock: aioresponses
+    ) -> None:
+        """Refresh rejected with no credentials has no recovery path."""
+        async with aiohttp.ClientSession() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+                access_token_expires=datetime.now() - timedelta(hours=1),
+                refresh_token_expires=datetime.now() + timedelta(days=30),
+            )
+            session_mock.post(
+                f"{API_URL}/user/refresh-token",
+                status=403,
+                body="<html><body>403 Forbidden</body></html>",
+                content_type="text/html",
+            )
+            with pytest.raises(TNSETokenRefreshError, match="403"):
+                await auth.async_get_access_token()
+
     async def test_get_access_token_no_expiration(self) -> None:
         """Test async_get_access_token returns token when no expiration set."""
         async with aiohttp.ClientSession() as session:

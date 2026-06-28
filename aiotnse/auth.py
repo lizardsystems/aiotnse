@@ -155,12 +155,23 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
                 or datetime.now() < self._refresh_token_expires
             ):
                 LOGGER.debug("Access token expired, refreshing via refresh token")
-                await self.async_refresh_token()
-                return self._access_token
+                try:
+                    await self.async_refresh_token()
+                    return self._access_token
+                except TNSETokenRefreshError:
+                    # The refresh token looked valid locally, but the server
+                    # rejected it (e.g. revoked server-side, or a 403/HTML
+                    # response). Fall back to a full login when we have
+                    # credentials instead of failing authentication.
+                    if not (self._email and self._password):
+                        raise
+                    LOGGER.debug(
+                        "Refresh token rejected by server, re-authenticating"
+                    )
 
-            # Refresh token also expired — try login
+            # Refresh token expired or rejected — try login
             if self._email and self._password:
-                LOGGER.debug("Both tokens expired, re-authenticating")
+                LOGGER.debug("Re-authenticating with email/password")
                 await self.async_login()
                 return self._access_token
 

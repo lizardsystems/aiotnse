@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-06-28
+
+### Fixed
+
+- `async_get_access_token()` now falls back to a full email/password login when the server rejects a still-valid refresh token (e.g. an HTTP 403 response with an HTML body). Previously a server-side refresh rejection surfaced as `TNSETokenRefreshError` and required manual re-authentication, even when valid credentials were available (lizardsystems/hass-tnse#14)
+
+### Added
+
+- `examples/healthcheck.py` — interactive, read-only smoke test that walks the main public and authenticated API calls (regions, version, login, refresh-token, accounts, balance, counters, readings, invoices, history, logout) and writes full request/response data to a log file, to quickly detect upstream API changes
+
 ## [2.0.3] - 2026-02-16
 
 ### Breaking
