@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiotnse"
-version = "2.0.4"
+version = "2.1.0"
 description = "Asynchronous Python API for TNS-Energo"
 readme = "README.md"
 license = "MIT"
@@ -47,7 +47,6 @@ aiotnse-cli = "aiotnse.__main__:main"
 test = [
     "pytest",
     "pytest-asyncio",
-    "aioresponses",
 ]
 
 [tool.setuptools]
@@ -59,3 +58,4 @@ include = ["aiotnse*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

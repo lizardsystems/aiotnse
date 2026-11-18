@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-11-18
+
+### Fixed
+
+- `async_login()` raises `TNSEApiError` instead of `TNSEAuthError` when the server fails without judging the credentials: an HTTP 5xx status, an empty body or a non-JSON body such as a proxy or WAF page. Callers now retry instead of asking the user for the password again. Wrong credentials, which the server reports as a JSON object, still raise `TNSEAuthError`. This also covers the login fallback after a rejected refresh token.
+
+### Changed
+
+- Tests mock aiohttp with an in-repo `AiohttpClientMocker` modeled on Home Assistant's `aioclient_mock` instead of `aioresponses`, which does not support aiohttp 3.14 (the version Home Assistant ships). `aioresponses` is no longer a test dependency.
+- Set `asyncio_default_fixture_loop_scope = "function"` in the pytest configuration; current pytest-asyncio warns when it is not set.
+
 ## [2.0.4] - 2026-06-28
 
 ### Fixed

@@ -8,11 +8,11 @@ from unittest.mock import MagicMock
 import aiohttp
 import pytest
 import pytest_asyncio
-from aioresponses import aioresponses
 
 from aiotnse import SimpleTNSEAuth
 from aiotnse.const import DEVICE_ID, _DEVICE_IDS
 from aiotnse.exceptions import TNSEApiError, TNSEAuthError, TNSETokenRefreshError
+from tests.aiohttp_mock import AiohttpClientMocker
 from tests.common import (
     ACCESS_TOKEN,
     ACCESS_TOKEN_EXPIRES,
@@ -28,31 +28,37 @@ from tests.conftest import load_fixture
 
 
 @pytest_asyncio.fixture
-async def login_auth() -> SimpleTNSEAuth:
+async def login_auth(aioclient_mock: AiohttpClientMocker) -> SimpleTNSEAuth:
     """Create a SimpleTNSEAuth instance with login credentials."""
-    async with aiohttp.ClientSession() as session:
+    session = aioclient_mock.create_session()
+    try:
         yield SimpleTNSEAuth(
             session=session,
             region=REGION,
             email=EMAIL,
             password=PASSWORD,
         )
+    finally:
+        await session.close()
 
 
 @pytest_asyncio.fixture
-async def no_creds_auth() -> SimpleTNSEAuth:
+async def no_creds_auth(aioclient_mock: AiohttpClientMocker) -> SimpleTNSEAuth:
     """Create a SimpleTNSEAuth instance without credentials."""
-    async with aiohttp.ClientSession() as session:
+    session = aioclient_mock.create_session()
+    try:
         yield SimpleTNSEAuth(session=session, region=REGION)
+    finally:
+        await session.close()
 
 
 class TestSimpleTNSEAuth:
     async def test_login_success(
-        self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, login_auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
-        session_mock.post(
+        aioclient_mock.post(
             f"{API_URL}/user/auth",
-            payload=load_fixture("auth_response.json"),
+            json=load_fixture("auth_response.json"),
             headers=HEADERS,
         )
         data = await login_auth.async_login()
@@ -68,11 +74,11 @@ class TestSimpleTNSEAuth:
         )
 
     async def test_login_wrong_credentials(
-        self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, login_auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
-        session_mock.post(
+        aioclient_mock.post(
             f"{API_URL}/user/auth",
-            payload=load_fixture("auth_error_response.json"),
+            json=load_fixture("auth_error_response.json"),
             headers=HEADERS,
         )
         with pytest.raises(TNSEAuthError, match="Неверный логин или пароль"):
@@ -83,11 +89,11 @@ class TestSimpleTNSEAuth:
             await no_creds_auth.async_login()
 
     async def test_refresh_token_success(
-        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
-        session_mock.post(
+        aioclient_mock.post(
             f"{API_URL}/user/refresh-token",
-            payload=load_fixture("refresh_token_response.json"),
+            json=load_fixture("refresh_token_response.json"),
             headers=HEADERS,
         )
         data = await auth.async_refresh_token()
@@ -105,11 +111,11 @@ class TestSimpleTNSEAuth:
             await no_creds_auth.async_refresh_token()
 
     async def test_logout(
-        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
-        session_mock.post(
+        aioclient_mock.post(
             f"{API_URL}/user/logout",
-            payload=load_fixture("logout_response.json"),
+            json=load_fixture("logout_response.json"),
             headers=HEADERS,
         )
         data = await auth.async_logout()
@@ -121,7 +127,7 @@ class TestSimpleTNSEAuth:
         assert auth.refresh_token_expires is None
 
     async def test_request_error_response(
-        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Verify request() raises TNSEApiError on error responses."""
         error_payload = {
@@ -129,19 +135,19 @@ class TestSimpleTNSEAuth:
             "statusCode": 400,
             "error": {"code": 100, "description": "Some API error"},
         }
-        session_mock.get(
+        aioclient_mock.get(
             f"{API_URL}/some-endpoint",
-            payload=error_payload,
+            json=error_payload,
             headers=HEADERS,
         )
         with pytest.raises(TNSEApiError, match="Some API error"):
             await auth.request("GET", "some-endpoint")
 
     async def test_request_http_error(
-        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Verify request() wraps HTTP errors in TNSEApiError."""
-        session_mock.get(
+        aioclient_mock.get(
             f"{API_URL}/some-endpoint",
             status=500,
         )
@@ -149,13 +155,13 @@ class TestSimpleTNSEAuth:
             await auth.request("GET", "some-endpoint")
 
     async def test_request_http_error_with_body(
-        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Verify request() includes API error description from response body."""
-        session_mock.get(
+        aioclient_mock.get(
             f"{API_URL}/some-endpoint",
             status=400,
-            payload={
+            json={
                 "result": False,
                 "error": {"description": "Account not found"},
             },
@@ -164,24 +170,46 @@ class TestSimpleTNSEAuth:
             await auth.request("GET", "some-endpoint")
 
     async def test_login_http_error(
-        self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, login_auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
-        """Verify async_login wraps HTTP errors in TNSEAuthError."""
-        session_mock.post(
+        """A login error without a JSON body is a transient API error."""
+        aioclient_mock.post(
             f"{API_URL}/user/auth",
             status=403,
         )
-        with pytest.raises(TNSEAuthError, match="403"):
+        with pytest.raises(TNSEApiError, match="403") as exc_info:
             await login_auth.async_login()
+        assert not isinstance(exc_info.value, TNSEAuthError)
+
+    @pytest.mark.parametrize(
+        ("status", "kwargs"),
+        [
+            (502, {"text": "<html>502 Bad Gateway</html>", "headers": {"Content-Type": "text/html"}}),
+            (500, {"json": {"result": False, "error": {"description": "Internal error"}}}),
+            (200, {"text": "<html>maintenance</html>", "headers": {"Content-Type": "text/html"}}),
+        ],
+    )
+    async def test_login_server_failure_is_not_auth_error(
+        self,
+        login_auth: SimpleTNSEAuth,
+        aioclient_mock: AiohttpClientMocker,
+        status: int,
+        kwargs: dict,
+    ) -> None:
+        """5xx and non-JSON login responses do not mean wrong credentials."""
+        aioclient_mock.post(f"{API_URL}/user/auth", status=status, **kwargs)
+        with pytest.raises(TNSEApiError) as exc_info:
+            await login_auth.async_login()
+        assert not isinstance(exc_info.value, TNSEAuthError)
 
     async def test_login_http_error_with_body(
-        self, login_auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, login_auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Verify async_login includes API error description from response body."""
-        session_mock.post(
+        aioclient_mock.post(
             f"{API_URL}/user/auth",
             status=401,
-            payload={
+            json={
                 "result": False,
                 "error": {"description": "Token expired"},
             },
@@ -216,11 +244,11 @@ class TestSimpleTNSEAuth:
         assert DEVICE_ID in _DEVICE_IDS
 
     async def test_token_update_callback_on_login(
-        self, session_mock: aioresponses
+        self, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Test that token_update_callback is called after login."""
         callback = MagicMock()
-        async with aiohttp.ClientSession() as session:
+        async with aioclient_mock.create_session() as session:
             auth = SimpleTNSEAuth(
                 session=session,
                 region=REGION,
@@ -228,9 +256,9 @@ class TestSimpleTNSEAuth:
                 password=PASSWORD,
                 token_update_callback=callback,
             )
-            session_mock.post(
+            aioclient_mock.post(
                 f"{API_URL}/user/auth",
-                payload=load_fixture("auth_response.json"),
+                json=load_fixture("auth_response.json"),
                 headers=HEADERS,
             )
             await auth.async_login()
@@ -243,14 +271,14 @@ class TestSimpleTNSEAuth:
         assert token_data["refresh_token_expires"] is not None
 
     async def test_token_update_callback_on_refresh(
-        self, auth: SimpleTNSEAuth, session_mock: aioresponses
+        self, auth: SimpleTNSEAuth, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Test that token_update_callback is called after refresh."""
         callback = MagicMock()
         auth._token_update_callback = callback
-        session_mock.post(
+        aioclient_mock.post(
             f"{API_URL}/user/refresh-token",
-            payload=load_fixture("refresh_token_response.json"),
+            json=load_fixture("refresh_token_response.json"),
             headers=HEADERS,
         )
         await auth.async_refresh_token()
@@ -274,10 +302,10 @@ class TestSimpleTNSEAuth:
         assert token == ACCESS_TOKEN
 
     async def test_get_access_token_expired_triggers_refresh(
-        self, session_mock: aioresponses
+        self, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Test async_get_access_token refreshes when access token is expired."""
-        async with aiohttp.ClientSession() as session:
+        async with aioclient_mock.create_session() as session:
             auth = SimpleTNSEAuth(
                 session=session,
                 region=REGION,
@@ -286,19 +314,19 @@ class TestSimpleTNSEAuth:
                 access_token_expires=datetime.now() - timedelta(hours=1),
                 refresh_token_expires=datetime.now() + timedelta(days=30),
             )
-            session_mock.post(
+            aioclient_mock.post(
                 f"{API_URL}/user/refresh-token",
-                payload=load_fixture("refresh_token_response.json"),
+                json=load_fixture("refresh_token_response.json"),
                 headers=HEADERS,
             )
             token = await auth.async_get_access_token()
         assert token == "test_access_token_refreshed"
 
     async def test_get_access_token_both_expired_triggers_login(
-        self, session_mock: aioresponses
+        self, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Test async_get_access_token re-logs in when both tokens are expired."""
-        async with aiohttp.ClientSession() as session:
+        async with aioclient_mock.create_session() as session:
             auth = SimpleTNSEAuth(
                 session=session,
                 region=REGION,
@@ -309,16 +337,16 @@ class TestSimpleTNSEAuth:
                 access_token_expires=datetime.now() - timedelta(hours=1),
                 refresh_token_expires=datetime.now() - timedelta(hours=1),
             )
-            session_mock.post(
+            aioclient_mock.post(
                 f"{API_URL}/user/auth",
-                payload=load_fixture("auth_response.json"),
+                json=load_fixture("auth_response.json"),
                 headers=HEADERS,
             )
             token = await auth.async_get_access_token()
         assert token == "test_access_token_new"
 
     async def test_get_access_token_refresh_rejected_falls_back_to_login(
-        self, session_mock: aioresponses
+        self, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Refresh rejected by server (403/HTML) falls back to login.
 
@@ -327,7 +355,7 @@ class TestSimpleTNSEAuth:
         with HTTP 403 and an HTML body. With stored credentials the client
         must re-login instead of surfacing a token refresh error.
         """
-        async with aiohttp.ClientSession() as session:
+        async with aioclient_mock.create_session() as session:
             auth = SimpleTNSEAuth(
                 session=session,
                 region=REGION,
@@ -338,25 +366,56 @@ class TestSimpleTNSEAuth:
                 access_token_expires=datetime.now() - timedelta(hours=1),
                 refresh_token_expires=datetime.now() + timedelta(days=30),
             )
-            session_mock.post(
+            aioclient_mock.post(
                 f"{API_URL}/user/refresh-token",
                 status=403,
-                body="<html><body>403 Forbidden</body></html>",
-                content_type="text/html",
+                text="<html><body>403 Forbidden</body></html>",
+                headers={"Content-Type": "text/html"},
             )
-            session_mock.post(
+            aioclient_mock.post(
                 f"{API_URL}/user/auth",
-                payload=load_fixture("auth_response.json"),
+                json=load_fixture("auth_response.json"),
                 headers=HEADERS,
             )
             token = await auth.async_get_access_token()
         assert token == "test_access_token_new"
 
+    async def test_get_access_token_refresh_rejected_login_server_down(
+        self, aioclient_mock: AiohttpClientMocker
+    ) -> None:
+        """Refresh rejected and login hits a 5xx: transient error, not auth."""
+        async with aioclient_mock.create_session() as session:
+            auth = SimpleTNSEAuth(
+                session=session,
+                region=REGION,
+                email=EMAIL,
+                password=PASSWORD,
+                access_token=ACCESS_TOKEN,
+                refresh_token=REFRESH_TOKEN,
+                access_token_expires=datetime.now() - timedelta(hours=1),
+                refresh_token_expires=datetime.now() + timedelta(days=30),
+            )
+            aioclient_mock.post(
+                f"{API_URL}/user/refresh-token",
+                status=403,
+                text="<html><body>403 Forbidden</body></html>",
+                headers={"Content-Type": "text/html"},
+            )
+            aioclient_mock.post(
+                f"{API_URL}/user/auth",
+                status=503,
+                text="<html>503 Service Unavailable</html>",
+                headers={"Content-Type": "text/html"},
+            )
+            with pytest.raises(TNSEApiError) as exc_info:
+                await auth.async_get_access_token()
+        assert not isinstance(exc_info.value, TNSEAuthError)
+
     async def test_get_access_token_refresh_rejected_no_creds_raises(
-        self, session_mock: aioresponses
+        self, aioclient_mock: AiohttpClientMocker
     ) -> None:
         """Refresh rejected with no credentials has no recovery path."""
-        async with aiohttp.ClientSession() as session:
+        async with aioclient_mock.create_session() as session:
             auth = SimpleTNSEAuth(
                 session=session,
                 region=REGION,
@@ -365,11 +424,11 @@ class TestSimpleTNSEAuth:
                 access_token_expires=datetime.now() - timedelta(hours=1),
                 refresh_token_expires=datetime.now() + timedelta(days=30),
             )
-            session_mock.post(
+            aioclient_mock.post(
                 f"{API_URL}/user/refresh-token",
                 status=403,
-                body="<html><body>403 Forbidden</body></html>",
-                content_type="text/html",
+                text="<html><body>403 Forbidden</body></html>",
+                headers={"Content-Type": "text/html"},
             )
             with pytest.raises(TNSETokenRefreshError, match="403"):
                 await auth.async_get_access_token()

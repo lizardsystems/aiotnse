@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from aiohttp import ClientSession
+from aiohttp import ClientResponse, ClientSession, ContentTypeError
 
 from .const import (
     BEARER_HEADER,
@@ -16,7 +17,7 @@ from .const import (
     DEVICE_ID,
     LOGGER,
 )
-from .exceptions import TNSEAuthError, TNSETokenRefreshError
+from .exceptions import TNSEApiError, TNSEAuthError, TNSETokenRefreshError
 from .helpers import build_request_headers, get_base_url, parse_api_response
 
 
@@ -197,11 +198,20 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
             json=json_data,
             headers=self._build_headers(),
         ) as resp:
-            data = await parse_api_response(
-                resp,
-                error_class=error_class,
-                default_error=default_error,
-            )
+            try:
+                data = await parse_api_response(
+                    resp,
+                    error_class=error_class,
+                    default_error=default_error,
+                )
+            except TNSEAuthError as err:
+                if error_class is TNSEAuthError and await _is_server_failure(resp):
+                    # A 5xx or a non-JSON body (proxy or WAF page) means the
+                    # server did not judge the credentials: report a transient
+                    # API error so the caller retries instead of re-asking
+                    # for the password.
+                    raise TNSEApiError(str(err)) from err
+                raise
             LOGGER.debug(
                 "Auth response: POST /%s -> %d: %s", path, resp.status, data
             )
@@ -288,3 +298,18 @@ class SimpleTNSEAuth(AbstractTNSEAuth):
                     else None
                 ),
             })
+
+
+async def _is_server_failure(resp: ClientResponse) -> bool:
+    """Return True if a failed auth response does not judge the credentials.
+
+    The server reports wrong credentials as a JSON object. A 5xx status, an
+    empty body or a non-JSON body (proxy or WAF page) is a server-side failure.
+    """
+    if resp.status >= 500:
+        return True
+    try:
+        body = await resp.json()  # aiohttp caches the body, safe to re-read
+    except (json.JSONDecodeError, ContentTypeError):
+        return True
+    return not isinstance(body, dict)
