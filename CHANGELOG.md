@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `async_get_access_token()` now falls back to a full email/password login when the server rejects a still-valid refresh token (e.g. an HTTP 403 response with an HTML body). Previously a server-side refresh rejection surfaced as `TNSETokenRefreshError` and required manual re-authentication, even when valid credentials were available (lizardsystems/hass-tnse#14)
+- `async_get_access_token()` now falls back to a full email/password login when the server rejects a still-valid refresh token (e.g. an HTTP 403 response with an HTML body). Previously a server-side refresh rejection surfaced as `TNSETokenRefreshError` and required manual re-authentication, even when valid credentials were available (ru-smarthome/hass-tnse#14)
 
 ### Added
 

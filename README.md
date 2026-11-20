@@ -2,12 +2,12 @@
 
 [![PyPI](https://img.shields.io/pypi/v/aiotnse.svg)](https://pypi.org/project/aiotnse/)
 [![Python](https://img.shields.io/pypi/pyversions/aiotnse.svg)](https://pypi.org/project/aiotnse/)
-[![License: MIT](https://img.shields.io/pypi/l/aiotnse.svg)](https://github.com/lizardsystems/aiotnse/blob/main/LICENSE)
-[![CI](https://github.com/lizardsystems/aiotnse/actions/workflows/ci.yml/badge.svg)](https://github.com/lizardsystems/aiotnse/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/pypi/l/aiotnse.svg)](https://github.com/ru-smarthome/aiotnse/blob/main/LICENSE)
+[![CI](https://github.com/ru-smarthome/aiotnse/actions/workflows/ci.yml/badge.svg)](https://github.com/ru-smarthome/aiotnse/actions/workflows/ci.yml)
 
 Асинхронная Python-библиотека для работы с мобильным API [ТНС-Энерго](https://tns-e.ru) (российская энергосбытовая компания).
 
-Используется как бэкенд для интеграции [hass-tnse](https://github.com/lizardsystems/hass-tnse) в Home Assistant.
+Используется как бэкенд для интеграции [hass-tnse](https://github.com/ru-smarthome/hass-tnse) в Home Assistant.
 
 ## Возможности
 
@@ -218,7 +218,7 @@ async with asyncio.timeout(10):
 
 ```bash
 # Клонирование
-git clone https://github.com/lizardsystems/aiotnse.git
+git clone https://github.com/ru-smarthome/aiotnse.git
 cd aiotnse
 
 # Установка зависимостей для тестирования
@@ -232,5 +232,5 @@ pytest tests/ -v
 
 - [Документация API](docs/API.md)
 - [Changelog](CHANGELOG.md)
-- [hass-tnse](https://github.com/lizardsystems/hass-tnse) — интеграция для Home Assistant
-- [Проблемы и предложения](https://github.com/lizardsystems/aiotnse/issues)
+- [hass-tnse](https://github.com/ru-smarthome/hass-tnse) — интеграция для Home Assistant
+- [Проблемы и предложения](https://github.com/ru-smarthome/aiotnse/issues)

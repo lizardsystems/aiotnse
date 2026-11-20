@@ -32,13 +32,13 @@ dependencies = [
 ]
 
 [[project.authors]]
-name = "LizardSystems"
+name = "ru-smarthome"
 
 [project.urls]
-Repository = "https://github.com/lizardsystems/aiotnse"
-Documentation = "https://github.com/lizardsystems/aiotnse"
-"Bug Tracker" = "https://github.com/lizardsystems/aiotnse/issues"
-Changelog = "https://github.com/lizardsystems/aiotnse/blob/main/CHANGELOG.md"
+Repository = "https://github.com/ru-smarthome/aiotnse"
+Documentation = "https://github.com/ru-smarthome/aiotnse"
+"Bug Tracker" = "https://github.com/ru-smarthome/aiotnse/issues"
+Changelog = "https://github.com/ru-smarthome/aiotnse/blob/main/CHANGELOG.md"
 
 [project.scripts]
 aiotnse-cli = "aiotnse.__main__:main"
